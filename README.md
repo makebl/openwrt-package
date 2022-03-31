@@ -1,1 +1,1 @@
-# openwrt-package
+README.md

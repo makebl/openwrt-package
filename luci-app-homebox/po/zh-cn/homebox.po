@@ -22,6 +22,3 @@ msgstr "Homebox服务状态"
 msgid "Collecting data..."
 msgstr "收集数据..."
 
-msgid "Global settings"
-msgstr "全局设置"
-

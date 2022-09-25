@@ -5,6 +5,6 @@ uci -q batch <<-EOF >/dev/null
 	set ucitrack.@wrtbwmon[-1].init=wrtbwmon
 	commit ucitrack
 EOF
-chmod +r /usr/share/onliner/setnlbw
+
 rm -f /tmp/luci-indexcache
 exit 0

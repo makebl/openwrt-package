@@ -9,13 +9,14 @@ font_off = [[</b>]]
 bold_on  = [[<strong>]]
 bold_off = [[</strong>]]
 
-m = Map(openclash,  translate("Servers manage and Config create"))
+m = Map(openclash,  translate("Onekey Create (Servers&Groups manage)"))
 m.pageaction = false
 m.description=translate("Attention:")..
 "<br/>"..translate("1. Before modifying the configuration file, please click the button below to read the configuration file")..
 "<br/>"..translate("2. Proxy-providers address can be directly filled in the subscription link")..
 "<br/>"..
-"<br/>"..translate("Introduction to proxy usage: https://lancellc.gitbook.io/clash/clash-config-file/proxies")
+"<br/>"..translate("Introduction to proxy usage: https://lancellc.gitbook.io/clash/clash-config-file/proxies")..
+"<br/>"..translate("Introduction to proxy-provider usage: https://lancellc.gitbook.io/clash/clash-config-file/proxy-provider")
 
 s = m:section(TypedSection, "openclash")
 s.anonymous = true
@@ -40,7 +41,7 @@ o = s:option(Flag, "servers_update", translate("Keep Settings"))
 o.description = font_red .. bold_on .. translate("Only Update Servers Below When Subscription") .. bold_off .. font_off
 o.default = 0
 
-o = s:option(DynamicList, "new_servers_group", translate("New Servers Group"))
+o = s:option(DynamicList, "new_servers_group", translate("New Servers Group (Support Regex)"))
 o.description = translate("Set The New Subscribe Server's Default Proxy Groups")
 o.rmempty = true
 o:depends("servers_update", 1)
@@ -55,7 +56,7 @@ s = m:section(TypedSection, "groups", translate("Proxy Groups(No Need Set when C
 s.anonymous = true
 s.addremove = true
 s.sortable = true
-s.template = "cbi/tblsection"
+s.template = "openclash/tblsection"
 s.extedit = luci.dispatcher.build_url("admin/services/openclash/groups-config/%s")
 function s.create(...)
 	local sid = TypedSection.create(...)
@@ -93,7 +94,7 @@ s = m:section(TypedSection, "proxy-provider", translate("Proxy-Provider"))
 s.anonymous = true
 s.addremove = true
 s.sortable = true
-s.template = "cbi/tblsection"
+s.template = "openclash/tblsection"
 s.extedit = luci.dispatcher.build_url("admin/services/openclash/proxy-provider-config/%s")
 function s.create(...)
 	local sid = TypedSection.create(...)
@@ -137,7 +138,7 @@ s = m:section(TypedSection, "servers", translate("Proxies"))
 s.anonymous = true
 s.addremove = true
 s.sortable = true
-s.template = "cbi/tblsection"
+s.template = "openclash/tblsection"
 s.extedit = luci.dispatcher.build_url("admin/services/openclash/servers-config/%s")
 function s.create(...)
 	local sid = TypedSection.create(...)

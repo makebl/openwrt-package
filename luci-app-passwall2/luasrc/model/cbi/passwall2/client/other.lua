@@ -3,6 +3,8 @@ local appname = api.appname
 local fs = api.fs
 local has_v2ray = api.is_finded("v2ray")
 local has_xray = api.is_finded("xray")
+local has_fw3 = api.is_finded("fw3")
+local has_fw4 = api.is_finded("fw4")
 
 m = Map(appname)
 
@@ -12,8 +14,7 @@ s.anonymous = true
 s.addremove = false
 
 ---- Delay Start
-o = s:option(Value, "start_delay", translate("Delay Start"),
-             translate("Units:seconds"))
+o = s:option(Value, "start_delay", translate("Delay Start"), translate("Units:seconds"))
 o.default = "1"
 o.rmempty = true
 
@@ -51,8 +52,7 @@ for e = 0, 23 do o:value(e, e .. translate("oclock")) end
 --]]
 
 -- [[ Forwarding Settings ]]--
-s = m:section(TypedSection, "global_forwarding",
-              translate("Forwarding Settings"))
+s = m:section(TypedSection, "global_forwarding", translate("Forwarding Settings"))
 s.anonymous = true
 s.addremove = false
 
@@ -64,9 +64,9 @@ o:value("1:65535", translate("All"))
 
 ---- UDP No Redir Ports
 o = s:option(Value, "udp_no_redir_ports", translate("UDP No Redir Ports"),
-             "<font color='red'>" .. translate(
-                 "Fill in the ports you don't want to be forwarded by the agent, with the highest priority.") ..
-                 "</font>")
+	"<font color='red'>" ..
+	translate("Fill in the ports you don't want to be forwarded by the agent, with the highest priority.") ..
+	"</font>")
 o.default = "disable"
 o:value("disable", translate("No patterns are used"))
 o:value("1:65535", translate("All"))
@@ -83,30 +83,40 @@ o = s:option(Value, "udp_redir_ports", translate("UDP Redir Ports"))
 o.default = "1:65535"
 o:value("1:65535", translate("All"))
 
-if os.execute("lsmod | grep -i REDIRECT >/dev/null") == 0 and os.execute("lsmod | grep -i TPROXY >/dev/null") == 0 then
-    o = s:option(ListValue, "tcp_proxy_way", translate("TCP Proxy Way"))
-    o.default = "redirect"
-    o:value("redirect", "REDIRECT")
-    o:value("tproxy", "TPROXY")
-    o:depends("ipv6_tproxy", false)
+---- Use nftables
+o = s:option(ListValue, "use_nft", translate("Firewall tools"))
+o.default = "0"
+if has_fw3 then
+	o:value("0", "IPtables")
+end
+if has_fw4 then
+	o:value("1", "NFtables")
+end
 
-    o = s:option(ListValue, "_tcp_proxy_way", translate("TCP Proxy Way"))
-    o.default = "tproxy"
-    o:value("tproxy", "TPROXY")
-    o:depends("ipv6_tproxy", true)
-    o.write = function(self, section, value)
-        return self.map:set(section, "tcp_proxy_way", value)
-    end
+if (os.execute("lsmod | grep -i REDIRECT >/dev/null") == 0 and os.execute("lsmod | grep -i TPROXY >/dev/null") == 0) or (os.execute("lsmod | grep -i nft_redir >/dev/null") == 0 and os.execute("lsmod | grep -i nft_tproxy >/dev/null") == 0) then
+	o = s:option(ListValue, "tcp_proxy_way", translate("TCP Proxy Way"))
+	o.default = "redirect"
+	o:value("redirect", "REDIRECT")
+	o:value("tproxy", "TPROXY")
+	o:depends("ipv6_tproxy", false)
 
-    if os.execute("lsmod | grep -i ip6table_mangle >/dev/null") == 0 then
-        ---- IPv6 TProxy
-        o = s:option(Flag, "ipv6_tproxy", translate("IPv6 TProxy"),
-                    "<font color='red'>" .. translate(
-                        "Experimental feature. Make sure that your node supports IPv6.") ..
-                        "</font>")
-        o.default = 0
-        o.rmempty = false
-    end
+	o = s:option(ListValue, "_tcp_proxy_way", translate("TCP Proxy Way"))
+	o.default = "tproxy"
+	o:value("tproxy", "TPROXY")
+	o:depends("ipv6_tproxy", true)
+	o.write = function(self, section, value)
+		return self.map:set(section, "tcp_proxy_way", value)
+	end
+
+	if os.execute("lsmod | grep -i ip6table_mangle >/dev/null") == 0 or os.execute("lsmod | grep -i nft_tproxy >/dev/null") == 0 then
+		---- IPv6 TProxy
+		o = s:option(Flag, "ipv6_tproxy", translate("IPv6 TProxy"),
+			"<font color='red'>" ..
+			translate("Experimental feature. Make sure that your node supports IPv6.") ..
+			"</font>")
+		o.default = 0
+		o.rmempty = false
+	end
 end
 
 o = s:option(Flag, "accept_icmp", translate("Hijacking ICMP (PING)"))
@@ -117,32 +127,32 @@ o:depends("ipv6_tproxy", true)
 o.default = 0
 
 if has_v2ray or has_xray then
-    o = s:option(Flag, "sniffing", translate("Sniffing (V2Ray/Xray)"), translate("When using the V2ray/Xray shunt, must be enabled, otherwise the shunt will invalid."))
-    o.default = 1
-    o.rmempty = false
+	o = s:option(Flag, "sniffing", translate("Sniffing (V2Ray/Xray)"), translate("When using the V2ray/Xray shunt, must be enabled, otherwise the shunt will invalid."))
+	o.default = 1
+	o.rmempty = false
 
-    if has_xray then
-        route_only = s:option(Flag, "route_only", translate("Sniffing Route Only (Xray)"), translate("When enabled, the server not will resolve the domain name again."))
-        route_only.default = 0
-        route_only:depends("sniffing", true)
+	if has_xray then
+		route_only = s:option(Flag, "route_only", translate("Sniffing Route Only (Xray)"), translate("When enabled, the server not will resolve the domain name again."))
+		route_only.default = 0
+		route_only:depends("sniffing", true)
 
-        local domains_excluded = string.format("/usr/share/%s/domains_excluded", appname)
-        o = s:option(TextValue, "no_sniffing_hosts", translate("No Sniffing Lists"), translate("Hosts added into No Sniffing Lists will not resolve again on server (Xray only)."))
-        o.rows = 15
-        o.wrap = "off"
-        o.cfgvalue = function(self, section) return fs.readfile(domains_excluded) or "" end
-        o.write = function(self, section, value) fs.writefile(domains_excluded, value:gsub("\r\n", "\n")) end
-        o.remove = function(self, section, value)
-            if route_only:formvalue(section) == "0" then
-                fs.writefile(domains_excluded, "")
-            end
-        end
-        o:depends({sniffing = true, route_only = false})
+		local domains_excluded = string.format("/usr/share/%s/domains_excluded", appname)
+		o = s:option(TextValue, "no_sniffing_hosts", translate("No Sniffing Lists"), translate("Hosts added into No Sniffing Lists will not resolve again on server (Xray only)."))
+		o.rows = 15
+		o.wrap = "off"
+		o.cfgvalue = function(self, section) return fs.readfile(domains_excluded) or "" end
+		o.write = function(self, section, value) fs.writefile(domains_excluded, value:gsub("\r\n", "\n")) end
+		o.remove = function(self, section, value)
+			if route_only:formvalue(section) == "0" then
+				fs.writefile(domains_excluded, "")
+			end
+		end
+		o:depends({sniffing = true, route_only = false})
 
-        o = s:option(Value, "buffer_size", translate("Buffer Size (Xray)"), translate("Buffer size for every connection (kB)"))
-        o.rmempty = true
-        o.datatype = "uinteger"
-    end
+		o = s:option(Value, "buffer_size", translate("Buffer Size (Xray)"), translate("Buffer size for every connection (kB)"))
+		o.rmempty = true
+		o.datatype = "uinteger"
+	end
 end
 
 return m

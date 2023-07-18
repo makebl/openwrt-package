@@ -22,7 +22,8 @@ TUN_DNS_PORT=15353
 TUN_DNS="127.0.0.1#${TUN_DNS_PORT}"
 DEFAULT_DNS=
 IFACES=
-NO_PROXY=0
+ENABLED_DEFAULT_ACL=0
+ENABLED_ACLS=0
 PROXY_IPV6=0
 PROXY_IPV6_UDP=0
 LUA_UTIL_PATH=/usr/lib/lua/luci/passwall2
@@ -265,7 +266,7 @@ lua_api() {
 
 run_v2ray() {
 	local flag node redir_port socks_address socks_port socks_username socks_password http_address http_port http_username http_password
-	local dns_listen_port direct_dns_protocol direct_dns_udp_server direct_dns_tcp_server direct_dns_doh direct_dns_client_ip direct_dns_query_strategy remote_dns_protocol remote_dns_udp_server remote_dns_tcp_server remote_dns_doh remote_dns_client_ip remote_dns_query_strategy dns_cache
+	local dns_listen_port direct_dns_protocol direct_dns_udp_server direct_dns_tcp_server direct_dns_doh direct_dns_client_ip direct_dns_query_strategy remote_dns_protocol remote_dns_udp_server remote_dns_tcp_server remote_dns_doh remote_dns_client_ip remote_fakedns remote_dns_query_strategy dns_cache
 	local loglevel log_file config_file
 	local _extra_param=""
 	eval_set_val $@
@@ -298,15 +299,16 @@ run_v2ray() {
 	}
 	local buffer_size=$(config_t_get global_forwarding buffer_size)
 	[ -n "${buffer_size}" ] && _extra_param="${_extra_param} -buffer_size ${buffer_size}"
-	
+
 	local protocol=$(config_n_get $node protocol)
 	[ "$protocol" == "_iface" ] && {
 		IFACES="$IFACES $(config_n_get $node iface)"
 	}
-	
+
 	[ -n "$dns_listen_port" ] && {
 		V2RAY_DNS_DIRECT_CONFIG="${TMP_PATH}/${flag}_dns_direct.json"
 		V2RAY_DNS_DIRECT_LOG="${TMP_PATH}/${flag}_dns_direct.log"
+		V2RAY_DNS_DIRECT_LOG="/dev/null"
 		V2RAY_DNS_DIRECT_ARGS="-dns_out_tag direct"
 		dns_direct_listen_port=$(get_new_port $(expr $dns_listen_port + 1) udp)
 		V2RAY_DNS_DIRECT_ARGS="${V2RAY_DNS_DIRECT_ARGS} -dns_listen_port ${dns_direct_listen_port}"
@@ -343,66 +345,67 @@ run_v2ray() {
 		esac
 		[ -n "$direct_dns_query_strategy" ] && V2RAY_DNS_DIRECT_ARGS="${V2RAY_DNS_DIRECT_ARGS} -dns_query_strategy ${direct_dns_query_strategy}"
 		[ -n "$direct_dns_client_ip" ] && V2RAY_DNS_DIRECT_ARGS="${V2RAY_DNS_DIRECT_ARGS} -dns_client_ip ${direct_dns_client_ip}"
-		
+
 		lua $UTIL_XRAY gen_dns_config ${V2RAY_DNS_DIRECT_ARGS} > $V2RAY_DNS_DIRECT_CONFIG
 		ln_run "$(first_type $(config_t_get global_app ${type}_file) ${type})" ${type} $V2RAY_DNS_DIRECT_LOG run -c "$V2RAY_DNS_DIRECT_CONFIG"
 		
-		[ "$remote_dns_protocol" != "fakedns" ] && {
-			V2RAY_DNS_REMOTE_CONFIG="${TMP_PATH}/${flag}_dns_remote.json"
-			V2RAY_DNS_REMOTE_LOG="${TMP_PATH}/${flag}_dns_remote.log"
-			V2RAY_DNS_REMOTE_ARGS="-dns_out_tag remote"
-			dns_remote_listen_port=$(get_new_port $(expr $dns_listen_port + 2) udp)
-			V2RAY_DNS_REMOTE_ARGS="${V2RAY_DNS_REMOTE_ARGS} -dns_listen_port ${dns_remote_listen_port}"
-			case "$remote_dns_protocol" in
-				udp)
-					local _dns=$(get_first_dns remote_dns_udp_server 53 | sed 's/#/:/g')
-					local _dns_address=$(echo ${_dns} | awk -F ':' '{print $1}')
-					local _dns_port=$(echo ${_dns} | awk -F ':' '{print $2}')
-					V2RAY_DNS_REMOTE_ARGS="${V2RAY_DNS_REMOTE_ARGS} -remote_dns_server ${_dns_address} -remote_dns_port ${_dns_port} -remote_dns_udp_server ${_dns_address}"
-				;;
-				tcp)
-					local _dns=$(get_first_dns remote_dns_tcp_server 53 | sed 's/#/:/g')
-					local _dns_address=$(echo ${_dns} | awk -F ':' '{print $1}')
-					local _dns_port=$(echo ${_dns} | awk -F ':' '{print $2}')
-					V2RAY_DNS_REMOTE_ARGS="${V2RAY_DNS_REMOTE_ARGS} -remote_dns_server ${_dns_address} -remote_dns_port ${_dns_port} -remote_dns_tcp_server tcp://${_dns}"
-				;;
-				doh)
-					local _doh_url=$(echo $remote_dns_doh | awk -F ',' '{print $1}')
-					local _doh_host_port=$(lua_api "get_domain_from_url(\"${_doh_url}\")")
-					#local _doh_host_port=$(echo $_doh_url | sed "s/https:\/\///g" | awk -F '/' '{print $1}')
-					local _doh_host=$(echo $_doh_host_port | awk -F ':' '{print $1}')
-					local is_ip=$(lua_api "is_ip(\"${_doh_host}\")")
-					local _doh_port=$(echo $_doh_host_port | awk -F ':' '{print $2}')
-					[ -z "${_doh_port}" ] && _doh_port=443
-					local _doh_bootstrap=$(echo $remote_dns_doh | cut -d ',' -sf 2-)
-					[ "${is_ip}" = "true" ] && _doh_bootstrap=${_doh_host}
-					[ -n "$_doh_bootstrap" ] && V2RAY_DNS_REMOTE_ARGS="${V2RAY_DNS_REMOTE_ARGS} -remote_dns_server ${_doh_bootstrap}"
-					V2RAY_DNS_REMOTE_ARGS="${V2RAY_DNS_REMOTE_ARGS} -remote_dns_port ${_doh_port} -remote_dns_doh_url ${_doh_url} -remote_dns_doh_host ${_doh_host}"
-				;;
-				fakedns)
-					V2RAY_DNS_REMOTE_ARGS="${V2RAY_DNS_REMOTE_ARGS} -remote_dns_fake 1"
-				;;
-			esac
-			
-			[ -n "$remote_dns_query_strategy" ] && V2RAY_DNS_REMOTE_ARGS="${V2RAY_DNS_REMOTE_ARGS} -dns_query_strategy ${remote_dns_query_strategy}"
-			[ -n "$remote_dns_client_ip" ] && V2RAY_DNS_REMOTE_ARGS="${V2RAY_DNS_REMOTE_ARGS} -dns_client_ip ${remote_dns_client_ip}"
-			
-			V2RAY_DNS_REMOTE_ARGS="${V2RAY_DNS_REMOTE_ARGS} -remote_dns_outbound_socks_address 127.0.0.1 -remote_dns_outbound_socks_port ${socks_port}"
-			lua $UTIL_XRAY gen_dns_config ${V2RAY_DNS_REMOTE_ARGS} > $V2RAY_DNS_REMOTE_CONFIG
-			ln_run "$(first_type $(config_t_get global_app ${type}_file) ${type})" ${type} $V2RAY_DNS_REMOTE_LOG run -c "$V2RAY_DNS_REMOTE_CONFIG"
-		}
-		
+		direct_dnsmasq_listen_port=$(get_new_port $(expr $dns_direct_listen_port + 1) udp)
+		if [ "${nftflag}" = "1" ]; then
+			local direct_nftset="4#inet#fw4#passwall2_whitelist,6#inet#fw4#passwall2_whitelist6"
+		else
+			local direct_ipset="passwall2_whitelist,passwall2_whitelist6"
+		fi
+		run_ipset_dnsmasq listen_port=${direct_dnsmasq_listen_port} server_dns=127.0.0.1#${dns_direct_listen_port} ipset="${direct_ipset}" nftset="${direct_nftset}" config_file=$TMP_PATH/dnsmasq_${flag}_direct.conf
+
+		V2RAY_DNS_REMOTE_CONFIG="${TMP_PATH}/${flag}_dns_remote.json"
+		V2RAY_DNS_REMOTE_LOG="${TMP_PATH}/${flag}_dns_remote.log"
+		V2RAY_DNS_REMOTE_LOG="/dev/null"
+		V2RAY_DNS_REMOTE_ARGS="-dns_out_tag remote"
+		dns_remote_listen_port=$(get_new_port $(expr $direct_dnsmasq_listen_port + 1) udp)
+		V2RAY_DNS_REMOTE_ARGS="${V2RAY_DNS_REMOTE_ARGS} -dns_listen_port ${dns_remote_listen_port}"
+		case "$remote_dns_protocol" in
+			udp)
+				local _dns=$(get_first_dns remote_dns_udp_server 53 | sed 's/#/:/g')
+				local _dns_address=$(echo ${_dns} | awk -F ':' '{print $1}')
+				local _dns_port=$(echo ${_dns} | awk -F ':' '{print $2}')
+				V2RAY_DNS_REMOTE_ARGS="${V2RAY_DNS_REMOTE_ARGS} -remote_dns_server ${_dns_address} -remote_dns_port ${_dns_port} -remote_dns_udp_server ${_dns_address}"
+			;;
+			tcp)
+				local _dns=$(get_first_dns remote_dns_tcp_server 53 | sed 's/#/:/g')
+				local _dns_address=$(echo ${_dns} | awk -F ':' '{print $1}')
+				local _dns_port=$(echo ${_dns} | awk -F ':' '{print $2}')
+				V2RAY_DNS_REMOTE_ARGS="${V2RAY_DNS_REMOTE_ARGS} -remote_dns_server ${_dns_address} -remote_dns_port ${_dns_port} -remote_dns_tcp_server tcp://${_dns}"
+			;;
+			doh)
+				local _doh_url=$(echo $remote_dns_doh | awk -F ',' '{print $1}')
+				local _doh_host_port=$(lua_api "get_domain_from_url(\"${_doh_url}\")")
+				#local _doh_host_port=$(echo $_doh_url | sed "s/https:\/\///g" | awk -F '/' '{print $1}')
+				local _doh_host=$(echo $_doh_host_port | awk -F ':' '{print $1}')
+				local is_ip=$(lua_api "is_ip(\"${_doh_host}\")")
+				local _doh_port=$(echo $_doh_host_port | awk -F ':' '{print $2}')
+				[ -z "${_doh_port}" ] && _doh_port=443
+				local _doh_bootstrap=$(echo $remote_dns_doh | cut -d ',' -sf 2-)
+				[ "${is_ip}" = "true" ] && _doh_bootstrap=${_doh_host}
+				[ -n "$_doh_bootstrap" ] && V2RAY_DNS_REMOTE_ARGS="${V2RAY_DNS_REMOTE_ARGS} -remote_dns_server ${_doh_bootstrap}"
+				V2RAY_DNS_REMOTE_ARGS="${V2RAY_DNS_REMOTE_ARGS} -remote_dns_port ${_doh_port} -remote_dns_doh_url ${_doh_url} -remote_dns_doh_host ${_doh_host}"
+			;;
+		esac
+
+		[ -n "$remote_dns_query_strategy" ] && V2RAY_DNS_REMOTE_ARGS="${V2RAY_DNS_REMOTE_ARGS} -dns_query_strategy ${remote_dns_query_strategy}"
+		[ -n "$remote_dns_client_ip" ] && V2RAY_DNS_REMOTE_ARGS="${V2RAY_DNS_REMOTE_ARGS} -dns_client_ip ${remote_dns_client_ip}"
+
+		V2RAY_DNS_REMOTE_ARGS="${V2RAY_DNS_REMOTE_ARGS} -remote_dns_outbound_socks_address 127.0.0.1 -remote_dns_outbound_socks_port ${socks_port}"
+		lua $UTIL_XRAY gen_dns_config ${V2RAY_DNS_REMOTE_ARGS} > $V2RAY_DNS_REMOTE_CONFIG
+		ln_run "$(first_type $(config_t_get global_app ${type}_file) ${type})" ${type} $V2RAY_DNS_REMOTE_LOG run -c "$V2RAY_DNS_REMOTE_CONFIG"
+
 		[ -n "$dns_listen_port" ] && _extra_param="${_extra_param} -dns_listen_port ${dns_listen_port}"
 		[ -n "$dns_cache" ] && _extra_param="${_extra_param} -dns_cache ${dns_cache}"
 		_extra_param="${_extra_param} -dns_query_strategy UseIP"
-		_extra_param="${_extra_param} -direct_dns_port ${dns_direct_listen_port} -direct_dns_udp_server 127.0.0.1"
-		if [ "$remote_dns_protocol" == "fakedns" ]; then
-			_extra_param="${_extra_param} -remote_dns_fake 1"
-		else
-			_extra_param="${_extra_param} -remote_dns_port ${dns_remote_listen_port} -remote_dns_udp_server 127.0.0.1"
-		fi
+		_extra_param="${_extra_param} -direct_dns_port ${direct_dnsmasq_listen_port} -direct_dns_udp_server 127.0.0.1"
+		_extra_param="${_extra_param} -remote_dns_port ${dns_remote_listen_port} -remote_dns_udp_server 127.0.0.1"
+		[ "$remote_fakedns" = "1" ] && _extra_param="${_extra_param} -remote_dns_fake 1 -remote_dns_fake_strategy ${remote_dns_query_strategy}"
 	}
-	
+
 	lua $UTIL_XRAY gen_config -node $node -redir_port $redir_port -tcp_proxy_way $tcp_proxy_way -loglevel $loglevel ${_extra_param} > $config_file
 	ln_run "$(first_type $(config_t_get global_app ${type}_file) ${type})" ${type} $log_file run -c "$config_file"
 }
@@ -438,7 +441,7 @@ run_socks() {
 	else
 		error_msg="某种原因，此 Socks 服务的相关配置已失联，启动中止！"
 	fi
-	
+
 	if [ "$type" == "v2ray" ] || [ "$type" == "xray" ]; then
 		local protocol=$(config_n_get $node protocol)
 		if [ "$protocol" == "_balancing" ] || [ "$protocol" == "_shunt" ] || [ "$protocol" == "_iface" ]; then
@@ -555,7 +558,7 @@ node_switch() {
 			new_script_func=$(echo $script_func | sed "s#${now_node_arg}#node=${new_node}#g")
 			${new_script_func}
 			echo $new_node > $TMP_ID_PATH/${flag}
-			
+
 			[ "$shunt_logic" != "0" ] && [ "$(config_n_get $new_node protocol nil)" = "_shunt" ] && {
 				echo $(config_n_get $new_node default_node nil) > $TMP_ID_PATH/${flag}_default
 				echo $(config_n_get $new_node main_node nil) > $TMP_ID_PATH/${flag}_main
@@ -630,18 +633,20 @@ run_global() {
 				V2RAY_ARGS="${V2RAY_ARGS} remote_dns_doh=${REMOTE_DNS_DOH}"
 				msg="${msg} 远程DNS：${REMOTE_DNS_DOH}"
 			;;
-			fakedns)
-				msg="${msg} 远程DNS：FakeDNS"
-			;;
 		esac
+		[ "$REMOTE_FAKEDNS" = "1" ] && {
+			V2RAY_ARGS="${V2RAY_ARGS} remote_fakedns=1"
+			msg="${msg} + FakeDNS "
+		}
+		
 		local _remote_dns_client_ip=$(config_t_get global remote_dns_client_ip)
 		[ -n "${_remote_dns_client_ip}" ] && V2RAY_ARGS="${V2RAY_ARGS} remote_dns_client_ip=${_remote_dns_client_ip}"
 	}
 	msg="${msg}）"
 	echolog ${msg}
-	
+
 	source $APP_PATH/helper_dnsmasq.sh stretch
-	source $APP_PATH/helper_dnsmasq.sh add TMP_DNSMASQ_PATH=$TMP_DNSMASQ_PATH DNSMASQ_CONF_FILE=/tmp/dnsmasq.d/dnsmasq-passwall2.conf DEFAULT_DNS=$AUTO_DNS LOCAL_DNS=$LOCAL_DNS TUN_DNS=$TUN_DNS
+	source $APP_PATH/helper_dnsmasq.sh add TMP_DNSMASQ_PATH=$TMP_DNSMASQ_PATH DNSMASQ_CONF_FILE=/tmp/dnsmasq.d/dnsmasq-passwall2.conf DEFAULT_DNS=$AUTO_DNS LOCAL_DNS=$LOCAL_DNS TUN_DNS=$TUN_DNS NFTFLAG=${nftflag:-0}
 
 	V2RAY_CONFIG=$TMP_PATH/global.json
 	V2RAY_LOG=$TMP_PATH/global.log
@@ -757,7 +762,7 @@ start_crontab() {
 		rm -rf $TMP_SUB_PATH
 	}
 
-	if [ "$NO_PROXY" == 0 ]; then
+	if [ "$ENABLED_DEFAULT_ACL" == 1 ] || [ "$ENABLED_ACLS" == 1 ]; then
 		start_daemon=$(config_t_get global_delay start_daemon 0)
 		[ "$start_daemon" = "1" ] && $APP_PATH/monitor.sh > /dev/null 2>&1 &
 
@@ -776,56 +781,222 @@ stop_crontab() {
 	#echolog "清除定时执行命令。"
 }
 
+add_ip2route() {
+	local ip=$(get_host_ip "ipv4" $1)
+	[ -z "$ip" ] && {
+		echolog "  - 无法解析[${1}]，路由表添加失败！"
+		return 1
+	}
+	local remarks="${1}"
+	[ "$remarks" != "$ip" ] && remarks="${1}(${ip})"
+
+	. /lib/functions/network.sh
+	local gateway device
+	network_get_gateway gateway "$2"
+	network_get_device device "$2"
+	[ -z "${device}" ] && device="$2"
+
+	if [ -n "${gateway}" ]; then
+		route add -host ${ip} gw ${gateway} dev ${device} >/dev/null 2>&1
+		echo "$ip" >> $TMP_ROUTE_PATH/${device}
+		echolog "  - [${remarks}]添加到接口[${device}]路由表成功！"
+	else
+		echolog "  - [${remarks}]添加到接口[${device}]路由表失功！原因是找不到[${device}]网关。"
+	fi
+}
+
+delete_ip2route() {
+	[ -d "${TMP_ROUTE_PATH}" ] && {
+		for interface in $(ls ${TMP_ROUTE_PATH}); do
+			for ip in $(cat ${TMP_ROUTE_PATH}/${interface}); do
+				route del -host ${ip} dev ${interface} >/dev/null 2>&1
+			done
+		done
+	}
+}
+
+start_haproxy() {
+	[ "$(config_t_get global_haproxy balancing_enable 0)" != "1" ] && return
+	haproxy_path=${TMP_PATH}/haproxy
+	haproxy_conf="config.cfg"
+	lua $APP_PATH/haproxy.lua -path ${haproxy_path} -conf ${haproxy_conf} -dns ${LOCAL_DNS}
+	ln_run "$(first_type haproxy)" haproxy "/dev/null" -f "${haproxy_path}/${haproxy_conf}"
+}
+
+run_ipset_dnsmasq() {
+	local listen_port server_dns ipset nftset cache_size dns_forward_max config_file
+	eval_set_val $@
+	cat <<-EOF > $config_file
+		port=${listen_port}
+		server=${server_dns}
+		no-poll
+		no-resolv
+		cache-size=${cache_size:-0}
+		dns-forward-max=${dns_forward_max:-1000}
+	EOF
+	[ -n "${ipset}" ] && echo "ipset=${ipset}" >> $config_file
+	[ -n "${nftset}" ] && echo "nftset=${nftset}" >> $config_file
+	ln_run "$(first_type dnsmasq)" "dnsmasq" "/dev/null" -C $config_file
+}
+
 kill_all() {
 	kill -9 $(pidof "$@") >/dev/null 2>&1
 }
 
-boot() {
-	[ "$ENABLED" == 1 ] && {
-		local delay=$(config_t_get global_delay start_delay 1)
-		if [ "$delay" -gt 0 ]; then
-			echolog "执行启动延时 $delay 秒后再启动!"
-			sleep $delay && start >/dev/null 2>&1 &
-		else
-			start
-		fi
+acl_app() {
+	local items=$(uci show ${CONFIG} | grep "=acl_rule" | cut -d '.' -sf 2 | cut -d '=' -sf 1)
+	[ -n "$items" ] && {
+		local index=0
+		local item
+		local redir_port dns_port dnsmasq_port
+		local ipt_tmp msg msg2
+		redir_port=11200
+		dns_port=11300
+		dnsmasq_port=11400
+		echolog "访问控制："
+		for item in $items; do
+			index=$(expr $index + 1)
+			local enabled sid remarks sources node direct_dns_protocol direct_dns direct_dns_doh direct_dns_client_ip direct_dns_query_strategy remote_dns_protocol remote_dns remote_dns_doh remote_dns_client_ip remote_fakedns remote_dns_query_strategy
+			local _ip _mac _iprange _ipset _ip_or_mac rule_list config_file
+			sid=$(uci -q show "${CONFIG}.${item}" | grep "=acl_rule" | awk -F '=' '{print $1}' | awk -F '.' '{print $2}')
+			eval $(uci -q show "${CONFIG}.${item}" | cut -d'.' -sf 3-)
+			[ "$enabled" = "1" ] || continue
+
+			[ -z "${sources}" ] && continue
+			for s in $sources; do
+				is_iprange=$(lua_api "iprange(\"${s}\")")
+				if [ "${is_iprange}" = "true" ]; then
+					rule_list="${rule_list}\niprange:${s}"
+				elif [ -n "$(echo ${s} | grep '^ipset:')" ]; then
+					rule_list="${rule_list}\nipset:${s}"
+				else
+					_ip_or_mac=$(lua_api "ip_or_mac(\"${s}\")")
+					if [ "${_ip_or_mac}" = "ip" ]; then
+						rule_list="${rule_list}\nip:${s}"
+					elif [ "${_ip_or_mac}" = "mac" ]; then
+						rule_list="${rule_list}\nmac:${s}"
+					fi
+				fi
+			done
+			[ -z "${rule_list}" ] && continue
+			mkdir -p $TMP_ACL_PATH/$sid
+			echo -e "${rule_list}" | sed '/^$/d' > $TMP_ACL_PATH/$sid/rule_list
+
+			tcp_proxy_mode="global"
+			udp_proxy_mode="global"
+			node=${node:-default}
+			direct_dns_protocol=${direct_dns_protocol:-auto}
+			direct_dns=${direct_dns:-119.29.29.29}
+			[ "$direct_dns_protocol" = "doh" ] && direct_dns=${direct_dns_doh:-https://223.5.5.5/dns-query}
+			direct_dns_query_strategy=${direct_dns_query_strategy:-UseIP}
+			remote_dns_protocol=${remote_dns_protocol:-tcp}
+			remote_dns=${remote_dns:-1.1.1.1}
+			[ "$remote_dns_protocol" = "doh" ] && remote_dns=${remote_dns_doh:-https://1.1.1.1/dns-query}
+			remote_fakedns=${remote_fakedns:-0}
+			remote_dns_query_strategy=${remote_dns_query_strategy:-UseIPv4}
+
+			[ "$node" != "nil" ] && {
+				if [ "$node" = "default" ]; then
+					node=$NODE
+					redir_port=$REDIR_PORT
+				else
+					[ "$(config_get_type $node nil)" = "nodes" ] && {
+						if [ "$node" = "$NODE" ]; then
+							redir_port=$REDIR_PORT
+						else
+							redir_port=$(get_new_port $(expr $redir_port + 1))
+							eval node_${node}_redir_port=$redir_port
+
+							local type=$(echo $(config_n_get $node type) | tr 'A-Z' 'a-z')
+							if [ -n "${type}" ]; then
+								config_file=$TMP_ACL_PATH/${node}_TCP_UDP_DNS_${redir_port}.json
+								dns_port=$(get_new_port $(expr $dns_port + 1))
+								local acl_socks_port=$(get_new_port $(expr $redir_port + $index))
+								run_v2ray flag=acl_$sid node=$node redir_port=$redir_port socks_address=127.0.0.1 socks_port=$acl_socks_port dns_listen_port=${dns_port} direct_dns_protocol=${direct_dns_protocol} direct_dns_udp_server=${direct_dns} direct_dns_tcp_server=${direct_dns} direct_dns_doh="${direct_dns}" direct_dns_client_ip=${direct_dns_client_ip} direct_dns_query_strategy=${direct_dns_query_strategy} remote_dns_protocol=${remote_dns_protocol} remote_dns_tcp_server=${remote_dns} remote_dns_udp_server=${remote_dns} remote_dns_doh="${remote_dns}" remote_dns_client_ip=${remote_dns_client_ip} remote_fakedns=${remote_fakedns} remote_dns_query_strategy=${remote_dns_query_strategy} config_file=${config_file}
+							fi
+							dnsmasq_port=$(get_new_port $(expr $dnsmasq_port + 1))
+							redirect_dns_port=$dnsmasq_port
+							mkdir -p $TMP_ACL_PATH/$sid/dnsmasq.d
+							default_dnsmasq_cfgid=$(uci show dhcp.@dnsmasq[0] |  awk -F '.' '{print $2}' | awk -F '=' '{print $1}'| head -1)
+							[ -s "/tmp/etc/dnsmasq.conf.${default_dnsmasq_cfgid}" ] && {
+								cp -r /tmp/etc/dnsmasq.conf.${default_dnsmasq_cfgid} $TMP_ACL_PATH/$sid/dnsmasq.conf
+								sed -i "/ubus/d" $TMP_ACL_PATH/$sid/dnsmasq.conf
+								sed -i "/dhcp/d" $TMP_ACL_PATH/$sid/dnsmasq.conf
+								sed -i "/port=/d" $TMP_ACL_PATH/$sid/dnsmasq.conf
+								sed -i "/conf-dir/d" $TMP_ACL_PATH/$sid/dnsmasq.conf
+								sed -i "/no-poll/d" $TMP_ACL_PATH/$sid/dnsmasq.conf
+								sed -i "/no-resolv/d" $TMP_ACL_PATH/$sid/dnsmasq.conf
+							}
+							echo "port=${dnsmasq_port}" >> $TMP_ACL_PATH/$sid/dnsmasq.conf
+							echo "conf-dir=${TMP_ACL_PATH}/${sid}/dnsmasq.d" >> $TMP_ACL_PATH/$sid/dnsmasq.conf
+							echo "server=127.0.0.1#${dns_port}" >> $TMP_ACL_PATH/$sid/dnsmasq.conf
+							echo "no-poll" >> $TMP_ACL_PATH/$sid/dnsmasq.conf
+							echo "no-resolv" >> $TMP_ACL_PATH/$sid/dnsmasq.conf
+							#source $APP_PATH/helper_dnsmasq.sh add TMP_DNSMASQ_PATH=$TMP_ACL_PATH/$sid/dnsmasq.d DNSMASQ_CONF_FILE=/dev/null DEFAULT_DNS=$AUTO_DNS TUN_DNS=127.0.0.1#${dns_port} NFTFLAG=${nftflag:-0} NO_LOGIC_LOG=1
+							ln_run "$(first_type dnsmasq)" "dnsmasq_${sid}" "/dev/null" -C $TMP_ACL_PATH/$sid/dnsmasq.conf -x $TMP_ACL_PATH/$sid/dnsmasq.pid
+							eval node_${node}_$(echo -n "${tcp_proxy_mode}${remote_dns}" | md5sum | cut -d " " -f1)=${dnsmasq_port}
+							filter_node $node TCP > /dev/null 2>&1 &
+							filter_node $node UDP > /dev/null 2>&1 &
+						fi
+						echo "${node}" > $TMP_ACL_PATH/$sid/var_node
+					}
+				fi
+				echo "${redir_port}" > $TMP_ACL_PATH/$sid/var_port
+			}
+			[ -n "$redirect_dns_port" ] && echo "${redirect_dns_port}" > $TMP_ACL_PATH/$sid/var_redirect_dns_port
+			unset enabled sid remarks sources node direct_dns_protocol direct_dns direct_dns_doh direct_dns_client_ip direct_dns_query_strategy remote_dns_protocol remote_dns remote_dns_doh remote_dns_client_ip remote_fakedns remote_dns_query_strategy
+			unset _ip _mac _iprange _ipset _ip_or_mac rule_list config_file
+			unset redirect_dns_port
+		done
+		unset redir_port dns_port dnsmasq_port
 	}
-	return 0
 }
 
 start() {
 	pgrep -f /tmp/etc/passwall2/bin > /dev/null 2>&1 && {
-		echolog "程序已启动，无需重复启动!"
-		return 0
+		echolog "程序已启动，先停止再重新启动!"
+		stop
 	}
 
 	ulimit -n 65535
+	start_haproxy
 	start_socks
+	nftflag=0
+	local use_nft=$(config_t_get global_forwarding use_nft 0)
+	local USE_TABLES
+	if [ "$use_nft" == 1 ] && [ -z "$(dnsmasq --version | grep 'Compile time options:.* nftset')" ]; then
+		echolog "Dnsmasq软件包不满足nftables透明代理要求，如需使用请确保dnsmasq版本在2.87以上并开启nftset支持。"
+	elif [ "$use_nft" == 1 ] && [ -n "$(dnsmasq --version | grep 'Compile time options:.* nftset')" ]; then
+		USE_TABLES="nftables"
+		nftflag=1
+	elif [ -z "$(command -v iptables-legacy || command -v iptables)" ] || [ -z "$(command -v ipset)" ] || [ -z "$(dnsmasq --version | grep 'Compile time options:.* ipset')" ]; then
+		echolog "系统未安装iptables或ipset或Dnsmasq没有开启ipset支持，无法透明代理！"
+	else
+		USE_TABLES="iptables"
+	fi
 
-	[ "$NO_PROXY" == 1 ] || {
-		if [ -z "$(command -v iptables-legacy || command -v iptables)" ] || [ -z "$(command -v ipset)" ]; then
-			echolog "系统未安装iptables或ipset，无法透明代理！"
-		else
-			run_global
-			source $APP_PATH/iptables.sh start
-			source $APP_PATH/helper_dnsmasq.sh logic_restart
-			bridge_nf_ipt=$(sysctl -e -n net.bridge.bridge-nf-call-iptables)
-			echo -n $bridge_nf_ipt > $TMP_PATH/bridge_nf_ipt
-			sysctl -w net.bridge.bridge-nf-call-iptables=0 >/dev/null 2>&1
-			[ "$PROXY_IPV6" == "1" ] && {
-				bridge_nf_ip6t=$(sysctl -e -n net.bridge.bridge-nf-call-ip6tables)
-				echo -n $bridge_nf_ip6t > $TMP_PATH/bridge_nf_ip6t
-				sysctl -w net.bridge.bridge-nf-call-ip6tables=0 >/dev/null 2>&1
-			}
-		fi
-	}
+	[ "$ENABLED_DEFAULT_ACL" == 1 ] && run_global
+	[ -n "$USE_TABLES" ] && source $APP_PATH/${USE_TABLES}.sh start
+	[ "$ENABLED_DEFAULT_ACL" == 1 ] && source $APP_PATH/helper_dnsmasq.sh logic_restart
+	if [ "$ENABLED_DEFAULT_ACL" == 1 ] || [ "$ENABLED_ACLS" == 1 ]; then
+		bridge_nf_ipt=$(sysctl -e -n net.bridge.bridge-nf-call-iptables)
+		echo -n $bridge_nf_ipt > $TMP_PATH/bridge_nf_ipt
+		sysctl -w net.bridge.bridge-nf-call-iptables=0 >/dev/null 2>&1
+		[ "$PROXY_IPV6" == "1" ] && {
+			bridge_nf_ip6t=$(sysctl -e -n net.bridge.bridge-nf-call-ip6tables)
+			echo -n $bridge_nf_ip6t > $TMP_PATH/bridge_nf_ip6t
+			sysctl -w net.bridge.bridge-nf-call-ip6tables=0 >/dev/null 2>&1
+		}
+	fi
 	start_crontab
 	echolog "运行完成！\n"
 }
 
 stop() {
 	clean_log
-	source $APP_PATH/iptables.sh stop
+	[ -n "$($(source $APP_PATH/iptables.sh get_ipt_bin) -t mangle -t nat -L -nv 2>/dev/null | grep "PSW2")" ] && source $APP_PATH/iptables.sh stop
+	[ -n "$(nft list sets 2>/dev/null | grep "${CONFIG}_")" ] && source $APP_PATH/nftables.sh stop
+	delete_ip2route
 	kill_all v2ray-plugin obfs-local
 	pgrep -f "sleep.*(6s|9s|58s)" | xargs kill -9 >/dev/null 2>&1
 	pgrep -af "${CONFIG}/" | awk '! /app\.sh|subscribe\.lua|rule_update\.lua/{print $1}' | xargs kill -9 >/dev/null 2>&1
@@ -843,15 +1014,17 @@ stop() {
 }
 
 ENABLED=$(config_t_get global enabled 0)
+NODE=$(config_t_get global node nil)
+[ "$ENABLED" == 1 ] && {
+	[ "$NODE" != "nil" ] && [ "$(config_get_type $NODE nil)" != "nil" ] && ENABLED_DEFAULT_ACL=1
+}
+ENABLED_ACLS=$(config_t_get global acl_enable 0)
+[ "$ENABLED_ACLS" == 1 ] && {
+	[ "$(uci show ${CONFIG} | grep "@acl_rule" | grep "enabled='1'" | wc -l)" == 0 ] && ENABLED_ACLS=0
+}
 SOCKS_ENABLED=$(config_t_get global socks_enabled 0)
 REDIR_PORT=$(echo $(get_new_port 1041 tcp,udp))
-[ "$ENABLED" != 1 ] && NO_PROXY=1
-NODE=$(config_t_get global node nil)
-[ "$NODE" == "nil" ] && NO_PROXY=1
-[ "$(config_get_type $NODE nil)" == "nil" ] && NO_PROXY=1
 tcp_proxy_way=$(config_t_get global_forwarding tcp_proxy_way redirect)
-RESOLVFILE=/tmp/resolv.conf.d/resolv.conf.auto
-[ -f "${RESOLVFILE}" ] && [ -s "${RESOLVFILE}" ] || RESOLVFILE=/tmp/resolv.conf.auto
 TCP_NO_REDIR_PORTS=$(config_t_get global_forwarding tcp_no_redir_ports 'disable')
 UDP_NO_REDIR_PORTS=$(config_t_get global_forwarding udp_no_redir_ports 'disable')
 TCP_REDIR_PORTS=$(config_t_get global_forwarding tcp_redir_ports '22,25,53,143,465,587,853,993,995,80,443')
@@ -864,11 +1037,18 @@ DIRECT_DNS=$(config_t_get global direct_dns 119.29.29.29:53 | sed 's/#/:/g' | se
 DIRECT_DNS_QUERY_STRATEGY=$(config_t_get global direct_dns_query_strategy UseIP)
 REMOTE_DNS_PROTOCOL=$(config_t_get global remote_dns_protocol tcp)
 REMOTE_DNS=$(config_t_get global remote_dns 1.1.1.1:53 | sed 's/#/:/g' | sed -E 's/\:([^:]+)$/#\1/g')
+REMOTE_FAKEDNS=$(config_t_get global remote_fakedns '0')
 REMOTE_DNS_QUERY_STRATEGY=$(config_t_get global remote_dns_query_strategy UseIPv4)
 DNS_CACHE=$(config_t_get global dns_cache 1)
 
+RESOLVFILE=/tmp/resolv.conf.d/resolv.conf.auto
+[ -f "${RESOLVFILE}" ] && [ -s "${RESOLVFILE}" ] || RESOLVFILE=/tmp/resolv.conf.auto
+
+ISP_DNS=$(cat $RESOLVFILE 2>/dev/null | grep -E -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | sort -u | grep -v 0.0.0.0 | grep -v 127.0.0.1)
+ISP_DNS6=$(cat $RESOLVFILE 2>/dev/null | grep -E "([A-Fa-f0-9]{1,4}::?){1,7}[A-Fa-f0-9]{1,4}" | awk -F % '{print $1}' | awk -F " " '{print $2}'| sort -u | grep -v -Fx ::1 | grep -v -Fx ::)
+
 DEFAULT_DNS=$(uci show dhcp | grep "@dnsmasq" | grep "\.server=" | awk -F '=' '{print $2}' | sed "s/'//g" | tr ' ' '\n' | grep -v "\/" | head -2 | sed ':label;N;s/\n/,/;b label')
-[ -z "${DEFAULT_DNS}" ] && DEFAULT_DNS=$(echo -n $(sed -n 's/^nameserver[ \t]*\([^ ]*\)$/\1/p' "${RESOLVFILE}" | grep -v -E "0.0.0.0|127.0.0.1|::" | head -2) | tr ' ' ',')
+[ -z "${DEFAULT_DNS}" ] && DEFAULT_DNS=$(echo -n $ISP_DNS | tr ' ' '\n' | head -2 | tr '\n' ',')
 AUTO_DNS=${DEFAULT_DNS:-119.29.29.29}
 
 PROXY_IPV6=$(config_t_get global_forwarding ipv6_tproxy 0)
@@ -880,6 +1060,9 @@ mkdir -p /tmp/etc $TMP_PATH $TMP_BIN_PATH $TMP_SCRIPT_FUNC_PATH $TMP_ID_PATH $TM
 arg1=$1
 shift
 case $arg1 in
+add_ip2route)
+	add_ip2route $@
+	;;
 get_new_port)
 	get_new_port $@
 	;;
@@ -900,8 +1083,5 @@ stop)
 	;;
 start)
 	start
-	;;
-boot)
-	boot
 	;;
 esac

@@ -115,6 +115,9 @@ msgstr "过滤模式"
 msgid "TCP node must be '%s' type to use FakeDNS."
 msgstr "TCP 节点必须是 '%s' 类型才能使用 FakeDNS。"
 
+msgid "Direct DNS"
+msgstr "直连 DNS"
+
 msgid "Remote DNS"
 msgstr "远程 DNS"
 
@@ -148,11 +151,17 @@ msgstr "用于 DNS 查询时通知 DNS 服务器，客户端所在的地理位�
 msgid "This feature requires the DNS server to support the Edns Client Subnet (RFC7871)."
 msgstr "此功能需要 DNS 服务器支持 EDNS Client Subnet（RFC7871）。"
 
-msgid "When the accessed domain name does not exist in the rule list, the default DNS used."
-msgstr "当访问的域名不存在规则列表中，使用的默认DNS。"
-
 msgid "The effect is better, but will increase the memory."
 msgstr "效果更好，但会增加内存使用。"
+
+msgid "When using the chnroute list the default DNS"
+msgstr "当使用中国列表外时的默认DNS"
+
+msgid "Remote DNS can avoid more DNS leaks, but some domestic domain names maybe to proxy!"
+msgstr "远程DNS可以避免更多的DNS泄露，但会导致规则列表外的某些国内域名可能会走代理！"
+
+msgid "Direct DNS Internet experience may be better, but DNS will be leaked!"
+msgstr "直连DNS上网体验可能会更佳，但是会泄露DNS！"
 
 msgid "Filter Proxy Host IPv6"
 msgstr "过滤代理域名 IPv6"
@@ -172,8 +181,8 @@ msgstr "关于DNS问题："
 msgid "Some browsers may have built-in DNS, be sure to close. Example: Chrome. Settings - Security and Privacy - Security - Use secure DNS disabled."
 msgstr "部分浏览器可能有内置的DNS，请务必关闭。如：chrome。 设置 - 安全和隐私设置 - 使用安全 DNS 关闭。"
 
-msgid "Sometimes after restart, you can not internet, especially the GFW mode. At this time, close all browsers (important), Windows Client, please `ipconfig / flushdns`. Please close the WiFi on the phone, cut the flight mode and then cut back."
-msgstr "有时候重启后，上不了，尤其是GFW模式。这时请先关闭所有浏览器（重要），Windows客户端请`ipconfig/flushdns`。手机端请关闭WIFI，切一下飞行模式再切回来。"
+msgid "Sometimes after restart, you can not internet, especially the GFW mode. At this time, close all browsers (important), Windows Client, please `ipconfig /flushdns`. Please close the WiFi on the phone, cut the flight mode and then cut back."
+msgstr "有时候重启后，上不了，尤其是GFW模式。这时请先关闭所有浏览器（重要），Windows客户端请`ipconfig /flushdns`。手机端请关闭WIFI，切一下飞行模式再切回来。"
 
 msgid "The client DNS and the default gateway must point to this router."
 msgstr "客户端DNS和默认网关必须指向本路由器。"
@@ -340,6 +349,27 @@ msgstr "Xray 负载均衡"
 msgid "V2ray_balancing"
 msgstr "V2ray 负载均衡"
 
+msgid "Balancing Strategy"
+msgstr "负载均衡策略"
+
+msgid "Use Custome Probe URL"
+msgstr "使用自定义探测网址"
+
+msgid "By default the built-in probe URL will be used, enable this option to use a custom probe URL."
+msgstr "默认使用内置的探测网址，启用此选项以使用自定义探测网址。"
+
+msgid "Probe URL"
+msgstr "探测网址"
+
+msgid "The URL used to detect the connection status."
+msgstr "用于检测连接状态的网址。"
+
+msgid "Probe Interval"
+msgstr "探测间隔"
+
+msgid "The interval between initiating probes. Every time this time elapses, a server status check is performed on a server. The time format is numbers + units, such as '10s', '2h45m', and the supported time units are <code>ns</code>, <code>us</code>, <code>ms</code>, <code>s</code>, <code>m</code>, <code>h</code>, which correspond to nanoseconds, microseconds, milliseconds, seconds, minutes, and hours, respectively."
+msgstr "发起探测的间隔。每经过这个时间，就会对一个服务器进行服务器状态检测。时间格式为数字+单位，比如<code>&quot;10s&quot;</code>, <code>&quot;2h45m&quot;</code>，支持的时间单位有 <code>ns</code>，<code>us</code>，<code>ms</code>，<code>s</code>，<code>m</code>，<code>h</code>，分别对应纳秒、微秒、毫秒、秒、分、时。"
+
 msgid "Shunt"
 msgstr "分流"
 
@@ -352,6 +382,12 @@ msgstr "V2ray 分流"
 msgid "Preproxy"
 msgstr "前置代理"
 
+msgid "Preproxy Node"
+msgstr "前置代理节点"
+
+msgid "Set the node to be used as a pre-proxy. Each rule (including <code>Default</code>) has a separate switch that controls whether this rule uses the pre-proxy or not."
+msgstr "设置用作前置代理的节点。每条规则（包括<code>默认</code>）都有独立开关控制本规则是否使用前置代理。"
+
 msgid "Direct Connection"
 msgstr "直连"
 
@@ -361,14 +397,14 @@ msgstr "黑洞"
 msgid "Default Preproxy"
 msgstr "默认前置代理"
 
+msgid "There are no available nodes, please add or subscribe nodes first."
+msgstr "没有可用节点，请先添加或订阅节点。"
+
 msgid "No shunt rules? Click me to go to add."
 msgstr "没有分流规则？点我前往去添加。"
 
 msgid "When using, localhost will connect this node first and then use this node to connect the default node."
 msgstr "当使用时，本机将首先连接到此节点，然后再使用此节点连接到默认节点落地。"
-
-msgid "dialerProxy"
-msgstr "底层传输方式的链式转发"
 
 msgid "Domain Strategy"
 msgstr "域名解析策略"
@@ -436,6 +472,9 @@ msgstr "证书路径"
 msgid "Finger Print"
 msgstr "指纹伪造"
 
+msgid "Avoid using randomized, unless you have to."
+msgstr "避免使用 randomized , 除非你必须要。"
+
 msgid "Original"
 msgstr "原版"
 
@@ -468,6 +507,9 @@ msgstr "QUIC 连接接收窗口"
 
 msgid "Disable MTU detection"
 msgstr "禁用 MTU 检测"
+
+msgid "Lazy Start"
+msgstr "延迟启动"
 
 msgid "Encrypt Method"
 msgstr "加密"
@@ -637,8 +679,8 @@ msgstr "切掉它"
 msgid "Applying to the default node"
 msgstr "应用于默认节点"
 
-msgid "Applying to the default preproxy node"
-msgstr "应用于默认前置节点"
+msgid "Applying to the preproxy node"
+msgstr "应用于前置代理节点"
 
 msgid "Add nodes to the standby node list by keywords"
 msgstr "通过关键字添加节点到备用节点列表"
@@ -670,11 +712,23 @@ msgstr "在浏览器输入路由IP加端口访问，如：192.168.1.1:1188"
 msgid "Haproxy Port"
 msgstr "负载均衡端口"
 
+msgid "Health Check Type"
+msgstr "健康检查类型"
+
+msgid "Inner implement"
+msgstr "内置实现"
+
+msgid "Health Check Inter"
+msgstr "健康检查节点间隔时间"
+
+msgid "When the availability test is used, the load balancing node will be converted into a Socks node. when node list set customizing, must be a Socks node, otherwise the health check will be invalid."
+msgstr "当使用可用性测试时，负载均衡节点将转换成Socks节点。下面的节点列表自定义时必须为Socks节点，否则健康检查将无效。"
+
 msgid "Add a node, Export Of Multi WAN Only support Multi Wan. Load specific gravity range 1-256. Multiple primary servers can be load balanced, standby will only be enabled when the primary server is offline! Multiple groups can be set, Haproxy port same one for each group."
 msgstr "添加节点，指定出口功能是为多WAN用户准备的。负载比重范围1-256。多个主服务器可以负载均衡，备用只有在主服务器离线时才会启用！可以设置多个组，负载均衡端口相同则为一组。"
 
-msgid "Note that the node configuration parameters for load balancing must be consistent, otherwise problems can arise!"
-msgstr "注意，负载均衡的节点配置参数必须一致，否则会出问题！"
+msgid "Note that the node configuration parameters for load balancing must be consistent when use TCP health check type, otherwise it cannot be used normally!"
+msgstr "注意，当使用TCP健康检查时负载均衡的节点配置参数必须一致，否则无法正常使用！"
 
 msgid "Node"
 msgstr "节点"
@@ -703,8 +757,14 @@ msgstr "主要"
 msgid "Standby"
 msgstr "备用"
 
+msgid "Check update"
+msgstr "检查更新"
+
 msgid "Manually update"
 msgstr "手动更新"
+
+msgid "The latest version: %s, currently does not support automatic update, if you need to update, please compile or download the ipk and then manually install."
+msgstr "最新版本：%s，目前暂不支持自动更新，如需更新，请自行编译或下载ipk然后手动安装。"
 
 msgid "Enable custom URL"
 msgstr "启用自定义规则地址"
@@ -976,8 +1036,8 @@ msgstr "从文件中加载 IP: 形如'ext:file:tag'，必须以ext:（小写）�
 msgid "Clear logs"
 msgstr "清空日志"
 
-msgid "Need node support required"
-msgstr "需要节点支持"
+msgid "Only recommend to use with VLESS-TCP-XTLS-Vision."
+msgstr "只推荐与 VLESS-TCP-XTLS-Vision 搭配使用。"
 
 msgid "Password"
 msgstr "密码"
@@ -988,8 +1048,8 @@ msgstr "IV 检查"
 msgid "UDP over TCP"
 msgstr "TCP 封装 UDP"
 
-msgid "Need Xray server side with Shadowsocks-2022 protocol"
-msgstr "需要 Xray 作服务器端的 Shadowsocks-2022 协议"
+msgid "Need Xray-core or sing-box as server side."
+msgstr "需要 Xray-core 或者 sing-box 作为服务器端。"
 
 msgid "Connection Timeout"
 msgstr "连接超时时间"
@@ -1057,6 +1117,9 @@ msgstr "额外的对称加密密钥"
 msgid "Local Address"
 msgstr "本地地址"
 
+msgid "Decimal numbers separated by \",\" or Base64-encoded strings."
+msgstr "用“,”隔开的十进制数字或 Base64 编码字符串。"
+
 msgid "Camouflage Type"
 msgstr "伪装类型"
 
@@ -1086,6 +1149,54 @@ msgstr "SS AEAD节点使用类型"
 
 msgid "Trojan Node Use Type"
 msgstr "Trojan节点使用类型"
+
+msgid "Set the TUIC proxy server ip address"
+msgstr "指定远程TUIC服务器IP"
+
+msgid "TUIC User Password For Connect Remote Server"
+msgstr "用于远程TUIC服务器连接的密码"
+
+msgid "TUIC UserName For Local Socks"
+msgstr "用于本地Socks服务器连接的用户名"
+
+msgid "TUIC Password For Local Socks"
+msgstr "用于本地Socks服务器连接的密码"
+
+msgid "UDP relay mode"
+msgstr "UDP中继模式"
+
+msgid "Congestion control algorithm"
+msgstr "拥塞控制算法"
+
+msgid "Heartbeat interval(second)"
+msgstr "保活心跳包发送间隔（单位：秒）"
+
+msgid "Timeout for establishing a connection to server(second)"
+msgstr "连接超时时间（单位：秒）"
+
+msgid "Garbage collection interval(second)"
+msgstr "UDP数据包片残片清理间隔（单位：秒）"
+
+msgid "Garbage collection lifetime(second)"
+msgstr "UDP数据包残片在服务器的保留时间（单位：秒）"
+
+msgid "Disable SNI"
+msgstr "关闭SNI服务器名称指示"
+
+msgid "Enable 0-RTT QUIC handshake"
+msgstr "客户端启用 0-RTT QUIC 连接握手"
+
+msgid "TUIC send window"
+msgstr "发送窗口（无需确认即可发送的最大字节数：默认8Mb*2）"
+
+msgid "TUIC receive window"
+msgstr "接收窗口（无需确认即可接收的最大字节数：默认8Mb）"
+
+msgid "TUIC Maximum packet size the socks5 server can receive from external, in bytes"
+msgstr "TUIC socks5 服务器可以从外部接收的最大数据包大小（以字节为单位）"
+
+msgid "Set if the listening socket should be dual-stack"
+msgstr "设置监听套接字为双栈"
 
 msgid "<br />none: default, no masquerade, data sent is packets with no characteristics.<br />srtp: disguised as an SRTP packet, it will be recognized as video call data (such as FaceTime).<br />utp: packets disguised as uTP will be recognized as bittorrent downloaded data.<br />wechat-video: packets disguised as WeChat video calls.<br />dtls: disguised as DTLS 1.2 packet.<br />wireguard: disguised as a WireGuard packet. (not really WireGuard protocol)"
 msgstr "<br />none：默认值，不进行伪装，发送的数据是没有特征的数据包。<br />srtp：伪装成 SRTP 数据包，会被识别为视频通话数据（如 FaceTime）。<br />utp：伪装成 uTP 数据包，会被识别为 BT 下载数据。<br />wechat-video：伪装成微信视频通话的数据包。<br />dtls：伪装成 DTLS 1.2 数据包。<br />wireguard：伪装成 WireGuard 数据包。(并不是真正的 WireGuard 协议)"
@@ -1228,6 +1339,24 @@ msgstr "%s 节点日志关闭"
 msgid "Log Level"
 msgstr "日志等级"
 
+msgid "Advanced log feature"
+msgstr "高级日志功能"
+
+msgid "For professionals only."
+msgstr "仅限专业人士使用。"
+
+msgid "Persist log file directory"
+msgstr "持久性日志文件目录"
+
+msgid "The path to the directory used to store persist log files, the \"/\" at the end can be omitted. Leave it blank to disable this feature."
+msgstr "用来存储持久性日志文件的目录路径，末尾的 “/” 可以省略。留空以禁用此功能。"
+
+msgid "Logging to system log"
+msgstr "记录到系统日志"
+
+msgid "Logging to the system log for more advanced functions. For example, send logs to a dedicated log server."
+msgstr "将日志记录到系统日志，以实现更加高级的功能。例如，把日志发送到专门的日志服务器。"
+
 msgid "Not enabled log"
 msgstr "未启用日志"
 
@@ -1281,6 +1410,9 @@ msgstr "无法移动新文件到：%s"
 
 msgid "Mux concurrency"
 msgstr "最大并发连接数"
+
+msgid "XUDP Mux concurrency"
+msgstr "XUDP 最大并发连接数"
 
 msgid "Mux idle timeout"
 msgstr "最大闲置时间"

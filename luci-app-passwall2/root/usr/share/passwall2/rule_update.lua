@@ -18,20 +18,17 @@ local v2ray_asset_location = ucic:get_first(name, 'global_rules', "v2ray_locatio
 local geoip_api = ucic:get_first(name, 'global_rules', "geoip_url", "https://api.github.com/repos/Loyalsoldier/v2ray-rules-dat/releases/latest")
 local geosite_api = ucic:get_first(name, 'global_rules', "geosite_url", "https://api.github.com/repos/Loyalsoldier/v2ray-rules-dat/releases/latest")
 --
+local use_nft = ucic:get(name, "@global_forwarding[0]", "use_nft") or "0"
 
 local log = function(...)
-    if arg1 then
-        local result = os.date("%Y-%m-%d %H:%M:%S: ") .. table.concat({...}, " ")
-        if arg1 == "log" then
-            local f, err = io.open("/tmp/log/passwall2.log", "a")
-            if f and err == nil then
-                f:write(result .. "\n")
-                f:close()
-            end
-        elseif arg1 == "print" then
-            print(result)
-        end
-    end
+	if arg1 then
+		if arg1 == "log" then
+			api.log(...)
+		elseif arg1 == "print" then
+			local result = os.date("%Y-%m-%d %H:%M:%S: ") .. table.concat({...}, " ")
+			print(result)
+		end
+	end
 end
 
 -- curl
@@ -188,6 +185,10 @@ luci.sys.call("uci commit " .. name)
 
 if reboot == 1 then
 	log("重启服务，应用新的规则。")
-	luci.sys.call("/usr/share/" .. name .. "/iptables.sh flush_ipset > /dev/null 2>&1 &")
+	if use_nft == "1" then
+		luci.sys.call("sh /usr/share/" .. name .. "/nftables.sh flush_nftset > /dev/null 2>&1 &")
+	else
+		luci.sys.call("sh /usr/share/" .. name .. "/iptables.sh flush_ipset > /dev/null 2>&1 &")
+	end
 end
 log("规则更新完毕...")

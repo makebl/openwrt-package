@@ -24,7 +24,7 @@ DISNEY_DOMAINS_LIST="/usr/share/openclash/res/Disney_Plus_Domains.list"
 china_ip_route=$(uci -q get openclash.config.china_ip_route)
 en_mode=$(uci -q get openclash.config.en_mode)
 fakeip_range=$(uci -q get openclash.config.fakeip_range || echo "198.18.0.1/16")
-client_fingerprint=$(uci -q get openclash.config.client_fingerprint || echo 0)
+ipv6_mode=$(uci -q get openclash.config.ipv6_mode || echo 0)
 CRASH_NUM=0
 CFG_UPDATE_INT=1
 STREAM_DOMAINS_PREFETCH=1
@@ -32,7 +32,7 @@ STREAM_AUTO_SELECT=1
 FW4=$(command -v fw4)
 
 check_dnsmasq() {
-   if [ -z "$(echo "$en_mode" |grep "redir-host")" ] && [ "$china_ip_route" -eq 1 ] && [ "$enable_redirect_dns" = "1" ]; then
+   if [ -z "$(echo "$en_mode" |grep "redir-host")" ] && [ "$china_ip_route" -eq 1 ] && [ "$enable_redirect_dns" != "2" ]; then
       if [ "$(nslookup www.baidu.com 127.0.0.1:12353 >/dev/null 2>&1 || echo $?)" != "1" ]; then
          DNSPORT=$(uci -q get dhcp.@dnsmasq[0].port)
          if [ -z "$DNSPORT" ]; then
@@ -47,7 +47,8 @@ check_dnsmasq() {
                      nft delete rule inet fw4 ${nft} handle ${handle}
                   done
                done >/dev/null 2>&1
-               position=$(nft list chain inet fw4 dstnat |grep "OpenClash" |grep "DNS" |awk -F '# handle ' '{print$2}' |sort -rn |head -1 || ehco 0)
+               local position=$(nft -a list chain inet fw4 dstnat |grep "OpenClash" |grep "DNS" |awk -F '# handle ' '{print$2}' |sort -rn |head -1)
+               [ -z "$position" ] && position=0
                nft add rule inet fw4 dstnat position "$position" tcp dport 53 redirect to "$DNSPORT" comment \"OpenClash DNS Hijack\" 2>/dev/null
                nft add rule inet fw4 dstnat position "$position" udp dport 53 redirect to "$DNSPORT" comment \"OpenClash DNS Hijack\" 2>/dev/null
                if [ "$ipv6_enable" -eq 1 ]; then
@@ -66,12 +67,14 @@ check_dnsmasq() {
                      done
                   fi
                done >/dev/null 2>&1
-               position=$(iptables -nvL PREROUTING -t nat |sed 1,2d |grep "OpenClash" |sed -n "/DNS/=" 2>/dev/null |sort -rn |head -1 || ehco 0)
+               local position=$(iptables -nvL PREROUTING -t nat |sed 1,2d |grep "OpenClash" |sed -n "/DNS/=" 2>/dev/null |sort -rn |head -1)
+               [ -z "$position" ] && position=0
                [ "$position" -ne 0 ] && let position++
                iptables -t nat -I PREROUTING "$position" -p udp --dport 53 -j REDIRECT --to-ports "$DNSPORT" -m comment --comment "OpenClash DNS Hijack" 2>/dev/null
                iptables -t nat -I PREROUTING "$position" -p tcp --dport 53 -j REDIRECT --to-ports "$DNSPORT" -m comment --comment "OpenClash DNS Hijack" 2>/dev/null
                if [ "$ipv6_enable" -eq 1 ]; then
-                  position=$(ip6tables -nvL PREROUTING -t nat |sed 1,2d |grep "OpenClash" |sed -n "/DNS/=" 2>/dev/null |sort -rn |head -1 || ehco 0)
+                  position=$(ip6tables -nvL PREROUTING -t nat |sed 1,2d |grep "OpenClash" |sed -n "/DNS/=" 2>/dev/null |sort -rn |head -1)
+                  [ -z "$position" ] && position=0
                   [ "$position" -ne 0 ] && let position++
                   ip6tables -t nat -I PREROUTING "$position" -p udp --dport 53 -j REDIRECT --to-ports "$DNSPORT" -m comment --comment "OpenClash DNS Hijack" 2>/dev/null
                   ip6tables -t nat -I PREROUTING "$position" -p tcp --dport 53 -j REDIRECT --to-ports "$DNSPORT" -m comment --comment "OpenClash DNS Hijack" 2>/dev/null
@@ -107,6 +110,7 @@ do
    stream_auto_select_discovery_plus=$(uci -q get openclash.config.stream_auto_select_discovery_plus || echo 0)
    stream_auto_select_bilibili=$(uci -q get openclash.config.stream_auto_select_bilibili || echo 0)
    stream_auto_select_google_not_cn=$(uci -q get openclash.config.stream_auto_select_google_not_cn || echo 0)
+   stream_auto_select_chatgpt=$(uci -q get openclash.config.stream_auto_select_chatgpt || echo 0)
    upnp_lease_file=$(uci -q get upnpd.config.upnp_lease_file)
    
    enable=$(uci -q get openclash.config.enable)
@@ -138,6 +142,12 @@ if [ "$enable" -eq 1 ]; then
 	      if [ "$core_type" == "TUN" ] || [ "$core_type" == "Meta" ]; then
 	         ip route replace default dev utun table "$PROXY_ROUTE_TABLE" 2>/dev/null
 	         ip rule add fwmark "$PROXY_FWMARK" table "$PROXY_ROUTE_TABLE" 2>/dev/null
+            if [ "$ipv6_mode" -eq 2 ] && [ "$ipv6_enable" -eq 1 ]; then
+               ip -6 rule del oif utun table 2022 >/dev/null 2>&1
+               ip -6 route del default dev utun table 2022 >/dev/null 2>&1
+               ip -6 route replace default dev utun table "$PROXY_ROUTE_TABLE" >/dev/null 2>&1
+               ip -6 rule add fwmark "$PROXY_FWMARK" table "$PROXY_ROUTE_TABLE" >/dev/null 2>&1
+            fi
 	      fi
 	      sleep 60
 	      continue
@@ -149,38 +159,6 @@ if [ "$enable" -eq 1 ]; then
 	else
 	   CRASH_NUM=0
   fi
-fi
-
-##client-fingerprint
-if [ "$client_fingerprint" != "0" ] && [ "$core_type" == "Meta" ]; then
-   ruby -ryaml -rYAML -I "/usr/share/openclash" -E UTF-8 -e "
-   begin
-      Value = YAML.load_file('$CONFIG_FILE');
-      if Value.key?('proxy-providers') and not Value['proxy-providers'].nil? then
-         Value['proxy-providers'].values.each{
-         |x,p,v|
-            if x.key?('path') and not x['path'].empty? then
-               p = '/etc/openclash/proxy_provider/'+File.basename(x['path']);
-               if File::exist?(p) then
-                  v = YAML.load_file(p);
-                  if v.key?('proxies') and not v['proxies'].nil? then
-                     v['proxies'].each{
-                     |z|
-                        if z['type'] == 'vmess' or z['type'] == 'vless' or z['type'] == 'trojan' then
-                           if z['client-fingerprint'] != '${client_fingerprint}' then
-                              z['client-fingerprint'] = '${client_fingerprint}';
-                           end;
-                        end;
-                     };
-                  end;
-                  File.open(p,'w') {|f| YAML.dump(v, f)};
-               end;
-            end;
-         };
-      end;
-   rescue Exception => e
-      puts '${LOGTIME} Watchdog: Edit Client-fingerprint Failed,【' + e.message + '】';
-   end" 2>/dev/null >> $LOG_FILE
 fi
 
 ## Porxy history
@@ -209,16 +187,9 @@ fi
    check_dnsmasq
 
 ## Localnetwork 刷新
-   lan_ip_cidrs=$(ip route | grep "/" | awk '{print $1}' | grep -vE "^$(echo "$fakeip_range"|awk -F '.' '{print $1"."$2}')" 2>/dev/null)
-   lan_ip6_cidrs=$(ip -6 route | grep "/" | awk '{print $1}' | grep -vE "^unreachable" 2>/dev/null)
-   wan_ip4s=$(ifconfig | grep 'inet addr' | awk '{print $2}' | cut -d: -f2 | grep -vE "(^$(echo "$fakeip_range"|awk -F '.' '{print $1"."$2}')|^192.168|^127.0)" 2>/dev/null)
+   wan_ip4s=$(/usr/share/openclash/openclash_get_network.lua "wanip" 2>/dev/null)
+   wan_ip6s=$(ifconfig | grep 'inet6 addr' | awk '{print $3}' 2>/dev/null)
    if [ -n "$FW4" ]; then
-      if [ -n "$lan_ip_cidrs" ]; then
-         for lan_ip_cidr in $lan_ip_cidrs; do
-            nft add element inet fw4 localnetwork { "$lan_ip_cidr" } 2>/dev/null
-         done
-      fi
-
       if [ -n "$wan_ip4s" ]; then
          for wan_ip4 in $wan_ip4s; do
             nft add element inet fw4 localnetwork { "$wan_ip4" } 2>/dev/null
@@ -226,12 +197,6 @@ fi
       fi
 
       if [ "$ipv6_enable" -eq 1 ]; then
-         if [ -n "$lan_ip6_cidrs" ]; then
-            for lan_ip6_cidr in $lan_ip6_cidrs; do
-               nft add element inet fw4 localnetwork6 { "$lan_ip6_cidr" } 2>/dev/null
-            done
-         fi
-
          if [ -n "$wan_ip6s" ]; then
             for wan_ip6 in $wan_ip6s; do
                nft add element inet fw4 localnetwork6 { "$wan_ip6" } 2>/dev/null
@@ -239,24 +204,12 @@ fi
          fi
       fi
    else
-      if [ -n "$lan_ip_cidrs" ]; then
-         for lan_ip_cidr in $lan_ip_cidrs; do
-            ipset add localnetwork "$lan_ip_cidr" 2>/dev/null
-         done
-      fi
-
       if [ -n "$wan_ip4s" ]; then
          for wan_ip4 in $wan_ip4s; do
             ipset add localnetwork "$wan_ip4" 2>/dev/null
          done
       fi
       if [ "$ipv6_enable" -eq 1 ]; then
-         if [ -n "$lan_ip6_cidrs" ]; then
-            for lan_ip6_cidr in $lan_ip6_cidrs; do
-               ipset add localnetwork6 "$lan_ip6_cidr" 2>/dev/null
-            done
-         fi
-
          if [ -n "$wan_ip6s" ]; then
             for wan_ip6 in $wan_ip6s; do
                ipset add localnetwork6 "$wan_ip6" 2>/dev/null
@@ -401,6 +354,10 @@ fi
             if [ "$stream_auto_select_bilibili" -eq 1 ]; then
                LOG_OUT "Tip: Start Auto Select Proxy For Bilibili Unlock..."
                /usr/share/openclash/openclash_streaming_unlock.lua "Bilibili" >> $LOG_FILE
+            fi
+            if [ "$stream_auto_select_chatgpt" -eq 1 ]; then
+               LOG_OUT "Tip: Start Auto Select Proxy For ChatGPT Unlock..."
+               /usr/share/openclash/openclash_streaming_unlock.lua "ChatGPT" >> $LOG_FILE
             fi
          fi
       fi

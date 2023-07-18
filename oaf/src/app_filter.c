@@ -473,6 +473,8 @@ int parse_flow_proto(struct sk_buff *skb, flow_info_t *flow)
 	}
 	return -1;
 }
+#define MAX_HOST_LEN 32
+#define MIN_HOST_LEN 4
 
 int dpi_https_proto(flow_info_t *flow)
 {
@@ -500,12 +502,14 @@ int dpi_https_proto(flow_info_t *flow)
 		{
 			return -1;
 		}
+		
 
 		if (p[i] == 0x0 && p[i + 1] == 0x0 && p[i + 2] == 0x0 && p[i + 3] != 0x0)
 		{
 			// 2 bytes
 			memcpy(&url_len, p + i + HTTPS_LEN_OFFSET, 2);
-			if (ntohs(url_len) <= 0 || ntohs(url_len) > data_len)
+
+			if (ntohs(url_len) <= MIN_HOST_LEN || ntohs(url_len) > data_len || ntohs(url_len) > MAX_HOST_LEN)
 			{
 				continue;
 			}
@@ -887,7 +891,28 @@ void af_get_smac(struct sk_buff *skb, u_int8_t *smac){
 	else
 		memcpy(smac, &skb->cb[40], ETH_ALEN);
 }
+int is_ipv4_broadcast(uint32_t ip) {
 
+    return (ip & 0x00FFFFFF) == 0x00FFFFFF;
+}
+
+int is_ipv4_multicast(uint32_t ip) {
+    return (ip & 0xF0000000) == 0xE0000000;
+}
+int af_check_bcast_ip(flow_info_t *f)
+{
+		
+	if (0 == f->src || 0 == f->dst)
+		return 1;
+	if (is_ipv4_broadcast(ntohl(f->src)) || is_ipv4_broadcast(ntohl(f->dst))){
+		return 1;
+	}
+	if (is_ipv4_multicast(ntohl(f->src)) || is_ipv4_multicast(ntohl(f->dst))){
+		return 1;
+	}
+
+	return 0;
+}
 u_int32_t app_filter_hook_bypass_handle(struct sk_buff *skb, struct net_device *dev){
 	flow_info_t flow;
 	u_int8_t smac[ETH_ALEN];
@@ -896,16 +921,24 @@ u_int32_t app_filter_hook_bypass_handle(struct sk_buff *skb, struct net_device *
 	if (!skb || !dev)
 		return NF_ACCEPT;
 
+	if (0 == af_lan_ip || 0 == af_lan_mask)
+		return NF_ACCEPT;
+	if (strstr(dev->name, "docker"))
+		return NF_ACCEPT;
+
 	memset((char *)&flow, 0x0, sizeof(flow_info_t));
 	if (parse_flow_proto(skb, &flow) < 0)
 		return NF_ACCEPT;
-	if (af_match_bcast_packet(&flow) || af_match_local_packet(&flow))
-		return NF_ACCEPT;
-
+	
 	if (af_lan_ip == flow.src || af_lan_ip == flow.dst){
 		return NF_ACCEPT;
 	}
+	if (af_check_bcast_ip(&flow) || af_match_local_packet(&flow))
+		return NF_ACCEPT;
 
+	if ((flow.src & af_lan_mask) != (af_lan_ip & af_lan_mask)){
+		return NF_ACCEPT;
+	}
 	af_get_smac(skb, smac);
 
 	AF_CLIENT_LOCK_W();
@@ -1117,30 +1150,37 @@ void fini_oaf_timer(void)
 
 static struct sock *oaf_sock = NULL;
 
+#define OAF_EXTRA_MSG_BUF_LEN 128
 int af_send_msg_to_user(char *pbuf, uint16_t len)
 {
 	struct sk_buff *nl_skb;
 	struct nlmsghdr *nlh;
-	//todo: kmalloc
-	char msg_buf[MAX_OAF_NL_MSG_LEN] = {0};
+	int buf_len = OAF_EXTRA_MSG_BUF_LEN + len;
+	char *msg_buf = NULL;
 	struct af_msg_hdr *hdr = NULL;
 	char *p_data = NULL;
 	int ret;
 	if (len >= MAX_OAF_NL_MSG_LEN)
 		return -1;
 
-	memset(msg_buf, 0x0, sizeof(msg_buf));
+	msg_buf = kmalloc(buf_len, GFP_KERNEL);
+	if (!msg_buf)
+		return -1;
+
+	memset(msg_buf, 0x0, buf_len);
 	nl_skb = nlmsg_new(len + sizeof(struct af_msg_hdr), GFP_ATOMIC);
 	if (!nl_skb)
 	{
-		return -1;
+		ret = -1;
+		goto fail;
 	}
 
 	nlh = nlmsg_put(nl_skb, 0, 0, OAF_NETLINK_ID, len + sizeof(struct af_msg_hdr), 0);
 	if (nlh == NULL)
 	{
 		nlmsg_free(nl_skb);
-		return -1;
+		ret = -1;
+		goto fail;
 	}
 
 	hdr = (struct af_msg_hdr *)msg_buf;
@@ -1150,6 +1190,9 @@ int af_send_msg_to_user(char *pbuf, uint16_t len)
 	memcpy(p_data, pbuf, len);
 	memcpy(nlmsg_data(nlh), msg_buf, len + sizeof(struct af_msg_hdr));
 	ret = netlink_unicast(oaf_sock, nl_skb, 999, MSG_DONTWAIT);
+
+fail:
+	kfree(msg_buf);
 	return ret;
 }
 

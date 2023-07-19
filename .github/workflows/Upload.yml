@@ -6,6 +6,13 @@ on:
   schedule:
     - cron: 0 21 * * *
 
+name: Auto Pull Passwall
+
+on:
+  push:
+    branches:
+      - main
+
 jobs:
   auto_pull:
     runs-on: ubuntu-latest
@@ -15,11 +22,13 @@ jobs:
       uses: actions/checkout@v2
       with:
         repository: makebl/openwrt-package
-        ref: passwall
         path: openwrt-package
 
     - name: Clone openwrt-passwall repository
       run: git clone https://github.com/xiaorouji/openwrt-passwall.git
+
+    - name: Switch to passwall branch in openwrt-passwall repository
+      run: git --git-dir=openwrt-passwall/.git --work-tree=openwrt-passwall checkout passwall
 
     - name: Create the 'feeds/passwall' directory in the 'openwrt-package/package' directory
       run: mkdir -p openwrt-package/package/feeds/passwall
@@ -35,3 +44,4 @@ jobs:
         git add -A
         git commit -m "Auto pull openwrt-passwall"
         git push
+

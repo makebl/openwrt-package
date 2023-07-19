@@ -1,9 +1,10 @@
 name: Auto Pull Passwall
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
+  
+  schedule:
+    - cron: 0 21 * * *
 
 jobs:
   auto_pull:

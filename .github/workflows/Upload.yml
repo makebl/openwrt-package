@@ -21,8 +21,11 @@ jobs:
     - name: Clone openwrt-passwall repository
       run: git clone https://github.com/xiaorouji/openwrt-passwall.git
 
+    - name: Create the 'feeds/passwall' directory in the 'openwrt-package/package' directory
+      run: mkdir -p openwrt-package/package/feeds/passwall
+
     - name: Move passwall files to openwrt-package/package/feeds/passwall directory
-      run: mv openwrt-passwall openwrt-package/package/feeds/passwall
+      run: mv openwrt-passwall/* openwrt-package/package/feeds/passwall
 
     - name: Commit and push changes
       run: |

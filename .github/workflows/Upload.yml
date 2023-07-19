@@ -6,13 +6,6 @@ on:
   schedule:
     - cron: 0 21 * * *
 
-name: Auto Pull Passwall
-
-on:
-  push:
-    branches:
-      - main
-
 jobs:
   auto_pull:
     runs-on: ubuntu-latest

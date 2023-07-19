@@ -15,12 +15,13 @@ jobs:
       with:
         repository: makebl/openwrt-package
         ref: passwall
+        path: openwrt-package
 
     - name: Clone openwrt-passwall repository
       run: git clone https://github.com/xiaorouji/openwrt-passwall.git
 
-    - name: Move passwall files to openwrt-package/feeds/passwall directory
-      run: mv openwrt-passwall/* openwrt-package/feeds/passwall/
+    - name: Move passwall files to openwrt-package/package/feeds/passwall directory
+      run: mv openwrt-passwall openwrt-package/package/feeds/passwall
 
     - name: Commit and push changes
       run: |

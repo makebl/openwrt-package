@@ -8,6 +8,8 @@ on:
 
 
 
+
+
 jobs:
   auto_pull:
     runs-on: ubuntu-latest
@@ -27,7 +29,9 @@ jobs:
       run: mkdir -p openwrt-package/package/feeds/passwall
 
     - name: Move passwall files to openwrt-package/package/feeds/passwall directory
-      run: mv openwrt-passwall/* openwrt-package/package/feeds/passwall
+      run: |
+        mv -f openwrt-passwall/* openwrt-package/package/feeds/passwall || true
+        mv -f openwrt-passwall/.* openwrt-package/package/feeds/passwall || true
 
     - name: Commit and push changes
       run: |

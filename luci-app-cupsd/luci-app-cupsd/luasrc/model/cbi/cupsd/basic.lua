@@ -7,7 +7,7 @@ local m, s, o
 
 
 m = Map("cupsd", translate("CUPS打印服务器"))
-m.description = translate("<font color=\"green\">CUPS是苹果公司为MacOS和其他类似UNIX的操作系统开发的基于标准的开源打印系统。</font>"..translate("</br>For specific usage, see:")..translate("<a href=\'https://github.com/sirpdboy/luci-app-cupsd.git' target=\'_blank\'>GitHub @sirpdboy/luci-app-cupsd </a>") )
+m.description = translate("<font color=\"green\">CUPS是苹果公司为MacOS和其他类似UNIX的操作系统开发的基于标准的开源打印系统。</font>"..translate("</br>")..translate("<a href=\'' target=\'_blank\'></a>") )
 m:section(SimpleSection).template  = "cupsd_status"
 
 s = m:section(TypedSection, "cupsd", translate("Global Settings"))

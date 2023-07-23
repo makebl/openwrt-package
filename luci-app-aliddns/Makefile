@@ -13,12 +13,12 @@ LUCI_PKGARCH:=all
 
 PKG_NAME:=luci-app-aliddns
 PKG_VERSION:=0.3.0
-PKG_RELEASE:=2
+PKG_RELEASE:=1
 
 PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=LICENSE
 PKG_MAINTAINER:=chenhw2 <https://github.com/chenhw2/>
 
-include $(TOPDIR)/feeds/luci/luci.mk
+include ../../luci.mk
 
 # call BuildPackage - OpenWrt buildroot signature

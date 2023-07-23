@@ -21,15 +21,19 @@ gost
 gowebdav
 iptvhelper
 kcptun
+lang
+lang1
 lua-maxminddb
 luci-app-3ginfo
 luci-app-adguardhome
 luci-app-advanced
 luci-app-aliddns
 luci-app-alist
+luci-app-aliyundrive-webdav
 luci-app-amlogic
 luci-app-autoipsetadder
 luci-app-autotimeset
+luci-app-bypass
 luci-app-chinadns-ng
 luci-app-clash
 luci-app-cloudflarespeedtest
@@ -55,6 +59,7 @@ luci-app-mosdns
 luci-app-msd_lite
 luci-app-natter
 luci-app-netdata
+luci-app-netdata1
 luci-app-netwizard
 luci-app-nginx-manager
 luci-app-nginx-pingos
@@ -89,6 +94,7 @@ luci-app-vssr
 luci-app-webd
 luci-app-wifidog
 luci-app-wolplus
+luci-app-xiaolaoshu
 luci-lib-iform
 lucky
 mentohust
@@ -115,6 +121,7 @@ rclone-ng
 rclone-webui-react
 rclone
 shadowsocks-libev
+small
 smartmontools
 socat
 switch-lan-play

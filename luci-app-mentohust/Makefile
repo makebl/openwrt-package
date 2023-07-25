@@ -8,6 +8,6 @@ PKG_NAME:=luci-app-mentohust
 PKG_VERSION:=1.1.1
 PKG_RELEASE:=4
 
-include ../../luci.mk
+include $(TOPDIR)/feeds/luci/luci.mk
 
 # call BuildPackage - OpenWrt buildroot signature

@@ -48,6 +48,6 @@ define Package/$(PKG_NAME)/postinst
 rm -fr /tmp/luci-indexcache /tmp/luci-modulecache
 endef
 
-include $(TOPDIR)/feeds/luci/luci.mk
+include ../../luci.mk
 
 # call BuildPackage - OpenWrt buildroot signature

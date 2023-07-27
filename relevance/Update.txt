@@ -14,7 +14,6 @@ shadowsocksr-libev
 simple-obfs
 tcping
 trojan
-tuic-client
 v2ray-core
 v2ray-geodata
 v2ray-plugin

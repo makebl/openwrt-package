@@ -89,7 +89,6 @@ luci-app-vssr
 luci-app-webd
 luci-app-wifidog
 luci-app-wolplus
-luci-app-xiaolaoshu
 luci-lib-iform
 lucky
 mentohust

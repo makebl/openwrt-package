@@ -83,8 +83,10 @@ luci-app-nodogsplash
 luci-app-oaf
 luci-app-oled
 luci-app-onliner
+luci-app-openclash
 luci-app-oscam
 luci-app-partexp
+luci-app-passwall
 luci-app-poweroff
 luci-app-pppoe-server
 luci-app-pushbot

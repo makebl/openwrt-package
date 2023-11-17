@@ -99,6 +99,7 @@ luci-app-smartdns
 luci-app-smartinfo
 luci-app-socat
 luci-app-ssr-mudb-server
+luci-app-ssr-plus
 luci-app-store
 luci-app-supervisord
 luci-app-switch-lan-play

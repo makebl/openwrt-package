@@ -11,7 +11,6 @@ if lan_gateway ~= "" then
    lan_gateway = sys.exec("ipaddr=`uci -q get network.lan.ipaddr`;echo ${ipaddr%.*}")
 end
 local lan_ip = uci:get("network", "lan", "ipaddr")
-local lan_dhcp = uci:get("dhcp", "lan", "ignore")
 local wan_face = sys.exec(" [ `uci -q get network.wan.ifname` ] && uci -q get network.wan.ifname  || uci -q get network.wan.device ")
 local wanproto = uci:get("netwizard", "default", "wan_proto")
 if wanproto == "" then
@@ -25,7 +24,7 @@ uci:foreach("wireless", "wifi-device",
 			return false
 		end)
 
-local m = Map("netwizard", luci.util.pcdata(translate("Inital Router Setup")), translate("Quick network setup wizard. If you need more settings, please enter network - interface to set.</br>")..translate("The network card is automatically set, and the physical interfaces other than the specified WAN interface are automatically bound as LAN ports, and all side routes are bound as LAN ports.</br>")..translate("For specific usage, see:")..translate("<a href=\'https://github.com/sirpdboy/luci-app-netwizard.git' target=\'_blank\'>GitHub @sirpdboy/netwizard</a>") )
+local m = Map("netwizard", luci.util.pcdata(translate("Network Router Setup")), translate("Quick network setup wizard. If you need more settings, please enter network - interface to set.</br>")..translate("The network card is automatically set, and the physical interfaces other than the specified WAN interface are automatically bound as LAN ports, and all side routes are bound as LAN ports.</br>")..translate("For specific usage, see:")..translate("<a href=\'https://github.com/sirpdboy/luci-app-netwizard.git' target=\'_blank\'>GitHub @sirpdboy/netwizard</a>") )
 
 local s = m:section(TypedSection, "netwizard", "")
 s.addremove = false
@@ -48,12 +47,8 @@ e:value("255.255.0.0")
 e:value("255.0.0.0")
 e.default = '255.255.255.0'
 
-e = s:taboption("wansetup", ListValue, "ipv6",translate('Select IPv6 mode'),translate("Default to use IPV6 hybrid mode"))
-e:value('0', translate('Disable IPv6'))
-e:value('1', translate('IPv6 Server mode'))
-e:value('2', translate('IPv6 Relay mode'))
-e:value('3', translate('IPv6 Hybird mode'))
-e.default = '3'
+e = s:taboption("wansetup", Flag, "ipv6",translate('Enable IPv6'))
+e.default = "0"
 
 wan_proto = s:taboption("wansetup", ListValue, "wan_proto", translate("Network protocol mode selection"), translate("Four different ways to access the Internet, please choose according to your own situation.</br>"))
 wan_proto.default = wanproto
@@ -80,7 +75,7 @@ for _, iface in ipairs(ifaces) do
 	end
   end
 end
-wan_interface.default = wan_face
+-- wan_interface.default = wan_face
 
 wan_pppoe_user = s:taboption("wansetup", Value, "wan_pppoe_user", translate("PAP/CHAP username"))
 wan_pppoe_user:depends({wan_proto="pppoe"})
@@ -132,7 +127,7 @@ lan_dns.datatype = "ip4addr"
 lan_dns.default = "223.5.5.5"
 
 lan_dhcp = s:taboption("wansetup", Flag, "lan_dhcp", translate("Disable DHCP Server"), translate("Selecting means that the DHCP server is not enabled. In a network, only one DHCP server is needed to allocate and manage client IPs. If it is a secondary route, it is recommended to turn off the primary routing DHCP server."))
-lan_dhcp.default = lan_dhcp
+lan_dhcp.default = 0
 lan_dhcp.anonymous = false
 
 e = s:taboption("wansetup", Flag, "dnsset", translate("Enable DNS notifications (ipv4/ipv6)"),translate("Force the DNS server in the DHCP server to be specified as the IP for this route"))
@@ -148,11 +143,9 @@ e:value("8.8.8.8", translate("Google DNS:8.8.8.8"))
 e:value("1.1.1.1", translate("Cloudflare DNS:1.1.1.1"))
 e.anonymous = false
 e:depends("dnsset", true)
-e.default = "1"
 
 lan_snat = s:taboption("wansetup", Flag, "lan_snat", translate("Custom firewall"),translate("Bypass firewall settings, when Xiaomi or Huawei are used as the main router, the WIFI signal cannot be used normally"))
 lan_snat:depends({wan_proto="siderouter"})
-lan_snat.default = 1
 lan_snat.anonymous = false
 
 e = s:taboption("wansetup", Value, "snat_tables", translate(" "))
@@ -167,12 +160,10 @@ redirectdns = s:taboption("wansetup", Flag, "redirectdns", translate("Custom fir
 redirectdns:depends({wan_proto="dhcp"})
 redirectdns:depends({wan_proto="static"})
 redirectdns:depends({wan_proto="pppoe"})
-redirectdns.default = 1
 redirectdns.anonymous = false
 
 masq = s:taboption("wansetup", Flag, "masq", translate("Enable IP dynamic camouflage"),translate("Enable IP dynamic camouflage when the side routing network is not ideal"))
 masq:depends({wan_proto="siderouter"})
-masq.default = 1
 masq.anonymous = false
 
 if has_wifi then
@@ -188,5 +179,10 @@ synflood.default = 1
 synflood.anonymous = false
 
 e = s:taboption("othersetup", Flag, "showhide",translate('Hide Wizard'), translate('Show or hide the setup wizard menu. After hiding, you can open the display wizard menu in [Advanced Settings] [Advanced] or use the 3rd function in the background to restore the wizard and default theme.'))
+
+m.apply_on_parse = true
+m.on_after_apply = function(self,map)
+	luci.sys.exec("/etc/init.d/netwizard start >/dev/null 2>&1")
+end
 
 return m

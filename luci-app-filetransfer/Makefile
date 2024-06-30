@@ -8,8 +8,9 @@ include $(TOPDIR)/rules.mk
 
 LUCI_TITLE:=LuCI page for IPK upload
 LUCI_DEPENDS:=+luci-lib-fs
-PKG_VERSION:=1
-PKG_RELEASE:=2
+LUCI_PKGARCH:=all
+
+PKG_NAME:=luci-app-filetransfer
 
 include $(TOPDIR)/feeds/luci/luci.mk
 

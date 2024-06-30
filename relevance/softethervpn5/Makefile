@@ -4,14 +4,16 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=softethervpn5
 PKG_VERSION:=5.02.5180
-PKG_RELEASE:=3
+PKG_RELEASE:=15
 
+PKG_MAINTAINER:=Andy Walsh <andy.walsh44+github@gmail.com>
 PKG_LICENSE:=GPL-2.0
 PKG_LICENSE_FILES:=COPYING
+PKG_OR:=1
 
 PKG_SOURCE_URL:=https://github.com/SoftEtherVPN/SoftEtherVPN/releases/download/$(PKG_VERSION)/
 PKG_SOURCE:=SoftEtherVPN-$(PKG_VERSION).tar.xz
-PKG_HASH:=b5649a8ea3cc6477325e09e2248ef708d434ee3b2251eb8764bcfc15fb1de456
+PKG_HASH:=skip
 
 HOST_BUILD_DIR:=$(BUILD_DIR_HOST)/SoftEtherVPN-$(PKG_VERSION)
 PKG_BUILD_DIR:=$(BUILD_DIR)/SoftEtherVPN-$(PKG_VERSION)

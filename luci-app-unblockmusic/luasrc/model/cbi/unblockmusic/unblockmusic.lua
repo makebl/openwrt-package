@@ -4,7 +4,7 @@ mp = Map("unblockmusic")
 mp.title = translate("解锁网易云灰色歌曲")
 mp.description = translate("采用 [QQ/百度/酷狗/酷我/咪咕/JOOX]等音源，替换网易云变灰歌曲链接")
 
-mp:section(SimpleSection).template = "unblockmusic/unblockmusic_status"
+mp:section(SimpleSection).template  = "unblockmusic/unblockmusic_status"
 
 s = mp:section(TypedSection, "unblockmusic")
 s.anonymous = true
@@ -92,6 +92,11 @@ restart.write = function()
 end
 restart:depends("apptype", "nodejs")
 
+acl_mode = s:option(ListValue, "acl_mode", translate("默认解锁模式"))
+acl_mode:value(0, translate("解锁"))
+acl_mode:value(1, translate("不解锁"))
+acl_mode.default = 0
+
 t = mp:section(TypedSection, "acl_rule")
 t.title = translate("例外客户端规则")
 t.description = translate("可以为局域网客户端分别设置不同的例外模式，默认无需设置")
@@ -117,5 +122,7 @@ filter_mode.rmempty = false
 filter_mode:value("disable", translate("不代理HTTP和HTTPS"))
 filter_mode:value("http", translate("不代理HTTP"))
 filter_mode:value("https", translate("不代理HTTPS"))
+filter_mode:value("proxy_http", translate("代理HTTP"))
+filter_mode:value("proxy_http_https", translate("代理HTTP和HTTPS"))
 
 return mp

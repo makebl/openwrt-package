@@ -8,51 +8,54 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=adbyby
 PKG_VERSION:=2.7
-PKG_RELEASE:=2
+PKG_RELEASE:=3
 
 include $(INCLUDE_DIR)/package.mk
 
 define Package/adbyby
-	SECTION:=net
-	CATEGORY:=Network
-	TITLE:=Powerful adblock module to block ad.
-	DEPENDS:=@(i386||x86_64||arm||aarch64||mipsel||mips)
-	URL:=http://www.adbyby.com/
+  SECTION:=net
+  CATEGORY:=Network
+  TITLE:=Powerful adblock module to block ad.
+  DEPENDS:=@(i386||x86_64||arm||mipsel||mips||aarch64)
+  URL:=http://www.adbyby.com/
 endef
 
 define Package/adbyby/description
-	Adbyby is a powerful adblock module to block ad,just like adblock.
+Adbyby is a powerful adblock module to block ad,just like adblock.
 endef
-
-ifeq ($(ARCH),i386)
-	ADBYBY_DIR:=x86
-endif
 
 ifeq ($(ARCH),x86_64)
 	ADBYBY_DIR:=amd64
 endif
-
+ifeq ($(ARCH),mipsel)
+	ADBYBY_DIR:=mipsle
+endif
+ifeq ($(ARCH),mips)
+	ADBYBY_DIR:=mips
+endif
+ifeq ($(ARCH),i386)
+	ADBYBY_DIR:=x86
+endif
 ifeq ($(ARCH),arm)
 	ADBYBY_DIR:=armv7
-	ifeq ($(CONFIG_HAS_FPU),)
+	ifeq ($(BOARD),bcm53xx)
 		ADBYBY_DIR:=arm
-	endif
+  endif
+  ifeq ($(BOARD),kirkwood)
+		ADBYBY_DIR:=arm
+  endif
 endif
-
 ifeq ($(ARCH),aarch64)
 	ADBYBY_DIR:=armv7
 endif
 
-ifeq ($(ARCH),mips)
-	ADBYBY_DIR:=mips
-endif
+define Build/Prepare
+endef
 
-ifeq ($(ARCH),mipsel)
-	ADBYBY_DIR:=mipsle
-endif
+define Build/Configure
+endef
 
 define Build/Compile
-	true
 endef
 
 define Package/adbyby/install

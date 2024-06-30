@@ -13,6 +13,9 @@ msgstr "基本设置"
 msgid "Running state"
 msgstr "运行状态"
 
+msgid "DDNS-GO Control panel"
+msgstr "DDNS-GO操作台"
+
 msgid "The DDNS-GO service is running."
 msgstr "DDNS-GO服务已启动"
 
@@ -21,6 +24,9 @@ msgstr "DDNS-GO服务未启动"
 
 msgid "DDNS-GO Status"
 msgstr "DDNS-GO服务状态"
+
+msgid "Please enable the DDNS-GO service"
+msgstr "请将DDNS-GO服务启用"
 
 msgid "Click the new page to open ddns-go"
 msgstr "点击打开ddns-go后台"
@@ -49,3 +55,5 @@ msgstr "指定DNS解析服务器"
 msgid "Do not start web services"
 msgstr "不启动web服务"
 
+msgid "Delayed Start (seconds)"
+msgstr "开机延时启动（秒）"

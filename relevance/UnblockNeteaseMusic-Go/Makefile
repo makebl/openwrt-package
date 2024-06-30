@@ -6,11 +6,11 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=UnblockNeteaseMusic-Go
 PKG_VERSION:=0.2.13
-PKG_RELEASE:=$(AUTORELEASE)
+PKG_RELEASE:=43
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/cnsilvan/UnblockNeteaseMusic/tar.gz/$(PKG_VERSION)?
-PKG_HASH:=92201b7f04ab1015c806c672b98a29b97d0f137d9b60e6d35d279c2064ed86a4
+PKG_HASH:=skip
 
 PKG_LICENSE:=GPL-3.0
 PKG_LICENSE_FILE:=LICENSE
@@ -21,7 +21,7 @@ PKG_CONFIG_DEPENDS:= \
 	CONFIG_UNBLOCKNETEASEMUSIC_GO_COMPRESS_UPX
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(firstword $(subst -, ,$(PKG_NAME)))-$(PKG_VERSION)
-PKG_BUILD_DEPENDS:=golang/host
+PKG_BUILD_DEPENDS:=golang/host upx/host
 PKG_BUILD_PARALLEL:=1
 PKG_USE_MIPS16:=0
 
@@ -63,7 +63,7 @@ endef
 
 define Build/Compile
 	$(call GoPackage/Build/Compile)
-ifeq ($(CONFIG_GOST_COMPRESS_UPX),y)
+ifeq ($(CONFIG_UNBLOCKNETEASEMUSIC_GO_COMPRESS_UPX),y)
 	$(STAGING_DIR_HOST)/bin/upx --lzma --best $(GO_PKG_BUILD_BIN_DIR)/UnblockNeteaseMusic
 endif
 endef

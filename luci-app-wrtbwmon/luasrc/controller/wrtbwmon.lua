@@ -1,8 +1,11 @@
 module("luci.controller.wrtbwmon", package.seeall)
 
 function index()
+	if not nixio.fs.access("/etc/config/wrtbwmon") then
+		return
+	end
 
-	entry({"admin", "nlbw", "usage"}, alias("admin", "nlbw", "usage", "details"), _("Usage"), 60)
+	entry({"admin", "nlbw", "usage"}, alias("admin", "nlbw", "usage", "details"), _("Usage"), 60).dependent = true
 	entry({"admin", "nlbw", "usage", "details"}, template("wrtbwmon/wrtbwmon"), _("Details"), 10).leaf = true
 	entry({"admin", "nlbw", "usage", "config"}, cbi("wrtbwmon/config"), _("Configuration"), 20).leaf = true
 	entry({"admin", "nlbw", "usage", "custom"}, form("wrtbwmon/custom"), _("User file"), 30).leaf = true
@@ -21,10 +24,7 @@ function usage_database_path()
 end
 
 function check_dependency()
-	local ret = "0"
-	if require("luci.model.ipkg").installed('iptables') then
-		ret = "1"
-	end
+	local ret = "1"
 	luci.http.prepare_content("text/plain")
 	luci.http.write(ret)
 end

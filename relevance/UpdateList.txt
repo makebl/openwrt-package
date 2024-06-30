@@ -1,10 +1,7 @@
 3ginfo
 OpenAppFilter
 Rclone-OpenWrt
-UnblockNeteaseMusic-Go
-UnblockNeteaseMusic
 Wiwiz-PinPinWiFi
-adbyby
 adguardhome
 alist
 alist2
@@ -18,9 +15,9 @@ assets
 autocore
 automount
 autosamba
+baidupcs-go
 baidupcs-web
 bcm27xx-eeprom
-bcm27xx-userland
 cdnspeedtest
 cgroupfs-mount
 chinadns-ng
@@ -36,7 +33,6 @@ dsmboot
 filebrowser
 frp
 gost
-gowebdav
 ipv6-helper
 k3-brcmfmac4366c-firmware
 k3screenctrl
@@ -46,10 +42,8 @@ libcryptopp
 lua-maxminddb
 luci-app-3ginfo
 luci-app-accesscontrol
-luci-app-adbyby-plus
 luci-app-adguardhome
 luci-app-advanced
-luci-app-aliddns
 luci-app-alist
 luci-app-aliyundrive-webdav
 luci-app-amlogic
@@ -77,10 +71,10 @@ luci-app-filetransfer
 luci-app-frpc
 luci-app-frps
 luci-app-gost
-luci-app-gowebdav
 luci-app-guest-wifi
 luci-app-ikoolproxy
 luci-app-ipsec-server
+luci-app-istoreenhance
 luci-app-istorex
 luci-app-linkease
 luci-app-lucky
@@ -114,8 +108,6 @@ luci-app-serverchan
 luci-app-shutdown
 luci-app-smartinfo
 luci-app-socat
-luci-app-softethervpn
-luci-app-softethervpn5
 luci-app-ssr-mudb-server
 luci-app-store
 luci-app-supervisord
@@ -126,7 +118,6 @@ luci-app-tcpdump
 luci-app-tencentddns
 luci-app-ttnode
 luci-app-udp2raw
-luci-app-unblockmusic
 luci-app-unblockneteasemusic
 luci-app-usb-printer
 luci-app-uugamebooster
@@ -143,6 +134,7 @@ luci-lib-docker
 luci-lib-fs
 luci-lib-iform
 luci-lib-nixio
+luci-nginxer
 lucky
 mentohust
 mosdns

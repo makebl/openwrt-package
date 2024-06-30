@@ -5,20 +5,21 @@
 # This is free software, licensed under the Apache License, Version 2.0 .
 #
 
-
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ddns-go
-PKG_VERSION:=6.1.0
+PKG_VERSION:=6.6.3
 PKG_RELEASE:=1
 
+PKG_SOURCE_PROTO:=git
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://codeload.github.com/jeessy2/ddns-go/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=892688c7b52d190db915b7bd100e37a0e10d5f98d1b7b3b36c1a867ccceab16e
+PKG_SOURCE_URL:=https://github.com/jeessy2/ddns-go.git
+PKG_MIRROR_HASH:=8754b9cd731cf98f1d9b046770b8ce4d45e5d315736b665b68ea266becddef1e
+PKG_SOURCE_VERSION:=451b42533d68dc06c8e0443d64da2533f01fd8ca
 
-PKG_LICENSE:=MIT
+PKG_LICENSE:=AGPL-3.0-only
 PKG_LICENSE_FILES:=LICENSE
-PKG_MAINTAINER:=Tianling Shen <cnsztl@immortalwrt.org>
+PKG_MAINTAINER:=herboy2008 <herboy2008@gmail.com>
 
 PKG_BUILD_DEPENDS:=golang/host
 PKG_BUILD_PARALLEL:=1

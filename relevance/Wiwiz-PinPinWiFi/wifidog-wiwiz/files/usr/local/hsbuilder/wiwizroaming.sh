@@ -20,9 +20,13 @@ debug() {
 
 getIP() {
 	mac="$1"	
-	
+	LANDEV=$(uci get wiwiz.portal.lan 2>/dev/null)
+	if [ "$LANDEV" == "" ]; then
+		LANDEV=br-lan
+	fi
+
 	for i in $(seq 6); do	
-		s=$(cat /proc/net/arp | grep -F 'br-lan' | grep -F "$mac" | grep -F '0x2')
+		s=$(cat /proc/net/arp | grep -F "$LANDEV" | grep -F "$mac" | grep -F '0x2')
 		if [ "$s" = "" ]; then
 			sleep 1
 			continue
@@ -80,7 +84,7 @@ logread -f | while read LINE; do
 				
         if [ "$s" != "" ]; then
 				debug "s=$s"
-				HID=$(uci get wiwiz.portal.hotspotid | xargs 2>/dev/null)
+				HID=$(uci get wiwiz.portal.hotspotid 2>/dev/null)
 				if [ "$HID" = "" ]; then
 					continue
 				fi

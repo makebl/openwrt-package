@@ -145,15 +145,17 @@ return view.extend({
                 display: none;
             }
             @media (max-width: 767px) {
+				.device-table th:nth-of-type(3),
+                .device-table td:nth-of-type(3) {
+                    display: none;
+                }
                 .device-table th:nth-of-type(4),
                 .device-table td:nth-of-type(4) {
                     display: none;
                 }
                 .device-table th,
                 .device-table td {
-                    white-space: nowrap;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
+                    padding: 0.35rem;
                 }
                 .device-table td:first-child {
                     max-width: 150px;
@@ -280,8 +282,8 @@ return view.extend({
         function sortTable(column, direction, container) {
             // 判断是否为 MAC 地址、接口或在线时间列，并设置默认排序方向为倒序
             if (column === 'mac' || column === 'uptime') {
-                    direction = 'desc';
-                }
+                direction = 'desc';
+            }
             devices.sort(function (a, b) {
                 var value1 = getValueForSorting(a, column);
                 var value2 = getValueForSorting(b, column);

@@ -33,8 +33,8 @@ filebrowser
 frp
 gost
 ipv6-helper
-k3-brcmfmac4366c-firmware
 k3screenctrl
+k3wifi
 kcptun
 kerman
 libcryptopp

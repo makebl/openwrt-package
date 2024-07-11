@@ -16,7 +16,7 @@
                 "/usr/share/AdGuardHome/watchconfig.sh": [ "exec" ],
                 "/etc/init.d/AdGuardHome": [ "exec" ],
                 "/etc/init.d/dnsmasq": [ "exec" ],
-                "/usr/bin/AdGuardHome/AdGuardHome": [ "exec" ]
+                "/usr/bin/AdGuardHome": [ "exec" ]
             },
 			"uci": [ "AdGuardHome", "adguardhome" ]
 		},

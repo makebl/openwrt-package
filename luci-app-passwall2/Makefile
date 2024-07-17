@@ -30,15 +30,6 @@ LUCI_DEPENDS:=+coreutils +coreutils-base64 +coreutils-nohup +curl \
 	+ip-full +libuci-lua +lua +luci-compat +luci-lib-jsonc +resolveip +tcping \
 	+xray-core +v2ray-geoip +v2ray-geosite \
 	+unzip \
-	+PACKAGE_$(PKG_NAME)_Iptables_Transparent_Proxy:ipset \
-	+PACKAGE_$(PKG_NAME)_Iptables_Transparent_Proxy:iptables-mod-conntrack-extra \
-	+PACKAGE_$(PKG_NAME)_Iptables_Transparent_Proxy:iptables-mod-iprange \
-	+PACKAGE_$(PKG_NAME)_Iptables_Transparent_Proxy:iptables-mod-socket \
-	+PACKAGE_$(PKG_NAME)_Iptables_Transparent_Proxy:iptables-mod-tproxy \
-	+PACKAGE_$(PKG_NAME)_Iptables_Transparent_Proxy:kmod-ipt-nat \
-	+PACKAGE_$(PKG_NAME)_Nftables_Transparent_Proxy:kmod-nft-socket \
-	+PACKAGE_$(PKG_NAME)_Nftables_Transparent_Proxy:kmod-nft-tproxy \
-	+PACKAGE_$(PKG_NAME)_Nftables_Transparent_Proxy:kmod-nft-nat \
 	+PACKAGE_$(PKG_NAME)_INCLUDE_Haproxy:haproxy \
 	+PACKAGE_$(PKG_NAME)_INCLUDE_Hysteria:hysteria \
 	+PACKAGE_$(PKG_NAME)_INCLUDE_NaiveProxy:naiveproxy \
@@ -66,25 +57,19 @@ config PACKAGE_$(PKG_NAME)_INCLUDE_IPv6_Nat
 
 if PACKAGE_$(PKG_NAME)
 
-config PACKAGE_$(PKG_NAME)_Iptables_Transparent_Proxy
-	bool "Iptables Transparent Proxy"
-	default y if ! PACKAGE_firewall4
-
-config PACKAGE_$(PKG_NAME)_Nftables_Transparent_Proxy
-	bool "Nftables Transparent Proxy"
-	default y if PACKAGE_firewall4
-
 config PACKAGE_$(PKG_NAME)_INCLUDE_Haproxy
 	bool "Include Haproxy"
 	default y if aarch64||arm||i386||x86_64
 
 config PACKAGE_$(PKG_NAME)_INCLUDE_Hysteria
 	bool "Include Hysteria"
+	select PACKAGE_hysteria
 	default n
 
 config PACKAGE_$(PKG_NAME)_INCLUDE_NaiveProxy
 	bool "Include NaiveProxy"
 	depends on !(arc||(arm&&TARGET_gemini)||armeb||mips||mips64||powerpc)
+	select PACKAGE_naiveproxy
 	default n
 
 config PACKAGE_$(PKG_NAME)_INCLUDE_Shadowsocks_Libev_Client
@@ -93,6 +78,7 @@ config PACKAGE_$(PKG_NAME)_INCLUDE_Shadowsocks_Libev_Client
 
 config PACKAGE_$(PKG_NAME)_INCLUDE_Shadowsocks_Libev_Server
 	bool "Include Shadowsocks Libev Server"
+	select PACKAGE_shadowsocks-libev-ss-server
 	default n
 
 config PACKAGE_$(PKG_NAME)_INCLUDE_Shadowsocks_Rust_Client
@@ -103,6 +89,7 @@ config PACKAGE_$(PKG_NAME)_INCLUDE_Shadowsocks_Rust_Client
 config PACKAGE_$(PKG_NAME)_INCLUDE_Shadowsocks_Rust_Server
 	bool "Include Shadowsocks Rust Server"
 	depends on aarch64||arm||i386||mips||mipsel||x86_64
+	select PACKAGE_shadowsocks-rust-ssserver
 	default n
 
 config PACKAGE_$(PKG_NAME)_INCLUDE_ShadowsocksR_Libev_Client
@@ -111,6 +98,7 @@ config PACKAGE_$(PKG_NAME)_INCLUDE_ShadowsocksR_Libev_Client
 
 config PACKAGE_$(PKG_NAME)_INCLUDE_ShadowsocksR_Libev_Server
 	bool "Include ShadowsocksR Libev Server"
+	select PACKAGE_shadowsocksr-libev-ssr-server
 	default n
 
 config PACKAGE_$(PKG_NAME)_INCLUDE_Simple_Obfs
@@ -124,6 +112,7 @@ config PACKAGE_$(PKG_NAME)_INCLUDE_SingBox
 config PACKAGE_$(PKG_NAME)_INCLUDE_tuic_client
 	bool "Include tuic-client"
 	depends on aarch64||arm||i386||x86_64
+	select PACKAGE_tuic-client
 	default n
 
 config PACKAGE_$(PKG_NAME)_INCLUDE_V2ray_Plugin

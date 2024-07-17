@@ -35,15 +35,6 @@ LUCI_DEPENDS:=+coreutils +coreutils-base64 +coreutils-nohup +curl \
 	+libuci-lua +lua +luci-compat +luci-lib-jsonc \
 	+microsocks +resolveip +tcping \
 	+lua-maxminddb +ipt2socks \
-	+PACKAGE_$(PKG_NAME)_Iptables_Transparent_Proxy:ipset \
-	+PACKAGE_$(PKG_NAME)_Iptables_Transparent_Proxy:iptables-mod-conntrack-extra \
-	+PACKAGE_$(PKG_NAME)_Iptables_Transparent_Proxy:iptables-mod-iprange \
-	+PACKAGE_$(PKG_NAME)_Iptables_Transparent_Proxy:iptables-mod-socket \
-	+PACKAGE_$(PKG_NAME)_Iptables_Transparent_Proxy:iptables-mod-tproxy \
-	+PACKAGE_$(PKG_NAME)_Iptables_Transparent_Proxy:kmod-ipt-nat \
-	+PACKAGE_$(PKG_NAME)_Nftables_Transparent_Proxy:kmod-nft-socket \
-	+PACKAGE_$(PKG_NAME)_Nftables_Transparent_Proxy:kmod-nft-tproxy \
-	+PACKAGE_$(PKG_NAME)_Nftables_Transparent_Proxy:kmod-nft-nat \
 	+PACKAGE_$(PKG_NAME)_INCLUDE_Haproxy:haproxy \
 	+PACKAGE_$(PKG_NAME)_INCLUDE_Hysteria:hysteria \
 	+PACKAGE_$(PKG_NAME)_INCLUDE_NaiveProxy:naiveproxy \
@@ -69,28 +60,6 @@ LUCI_DEPENDS:=+coreutils +coreutils-base64 +coreutils-nohup +curl \
 define Package/$(PKG_NAME)/config
 menu "Configuration"
 	depends on PACKAGE_$(PKG_NAME)
-
-config PACKAGE_$(PKG_NAME)_Iptables_Transparent_Proxy
-	bool "Iptables Transparent Proxy"
-	select PACKAGE_ipset
-	select PACKAGE_ipt2socks
-	select PACKAGE_iptables
-	select PACKAGE_iptables-zz-legacy
-	select PACKAGE_iptables-mod-conntrack-extra
-	select PACKAGE_iptables-mod-iprange
-	select PACKAGE_iptables-mod-socket
-	select PACKAGE_iptables-mod-tproxy
-	select PACKAGE_kmod-ipt-nat
-	default y if ! PACKAGE_firewall4
-
-config PACKAGE_$(PKG_NAME)_Nftables_Transparent_Proxy
-	bool "Nftables Transparent Proxy"
-	select PACKAGE_ipt2socks
-	select PACKAGE_nftables
-	select PACKAGE_kmod-nft-socket
-	select PACKAGE_kmod-nft-tproxy
-	select PACKAGE_kmod-nft-nat
-	default y if PACKAGE_firewall4
 
 config PACKAGE_$(PKG_NAME)_INCLUDE_Haproxy
 	bool "Include Haproxy"

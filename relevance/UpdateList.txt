@@ -1,8 +1,6 @@
 3ginfo
 OpenAppFilter
 Rclone-OpenWrt
-UnblockNeteaseMusic-Go
-UnblockNeteaseMusic
 Wiwiz-PinPinWiFi
 adguardhome
 alist
@@ -89,7 +87,6 @@ luci-app-tcpdump
 luci-app-tencentddns
 luci-app-ttnode
 luci-app-udp2raw
-luci-app-unblockmusic
 luci-app-unblockneteasemusic
 luci-app-unishare
 luci-app-vlmcsd
